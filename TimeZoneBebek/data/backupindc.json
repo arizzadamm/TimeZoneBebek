@@ -1,0 +1,28 @@
+[
+  {
+    "Id": "INC-2025-004",
+    "Date": "2025-12-29T14:29:17.0905909+07:00",
+    "Title": "XSS Client",
+    "Severity": "HIGH",
+    "Attacker": "192.168.1.1",
+    "Summary": "SQL Hacks",
+    "Tags": [
+      "auth",
+      "xss"
+    ],
+    "AiAnalysis": "\n\u003C|begin_of_box|\u003E\u003Ch3\u003E\uD83D\uDEE1\uFE0F ATTACK VECTOR ANALYSIS\u003C/h3\u003E\n\u003Cp\u003EThe incident indicates a potential SQL injection attack from the IP address \u003Cb\u003E192.168.1.1\u003C/b\u003E. SQL injection is a code injection technique used to attack data-driven applications by inserting malicious SQL statements into entry fields. The attacker is attempting to manipulate database queries by injecting SQL code through web form inputs, URL parameters, or other user-supplied data. This technique allows attackers to bypass authentication, extract sensitive data, or execute arbitrary commands on the database server.\u003C/p\u003E\n\n\u003Ch3\u003E\u26A0\uFE0F BUSINESS \u0026 SYSTEM IMPACT\u003C/h3\u003E\n\u003Cp\u003EIf successful, this attack could lead to severe consequences including: data exfiltration of sensitive customer information, database manipulation or corruption, unauthorized access to administrative functions, and potential system compromise. The attacker could potentially gain access to personally identifiable information (PII), financial data, or other confidential business information stored in the database. This could result in regulatory compliance violations, financial losses, and reputational damage.\u003C/p\u003E\n\n\u003Ch3\u003E\u2705 REMEDIATION STEPS\u003C/h3\u003E\n\u003Cul\u003E\n   \u003Cli\u003EImplement parameterized queries or prepared statements in all database interactions to prevent SQL injection vulnerabilities\u003C/li\u003E\n   \u003Cli\u003EApply input validation and sanitization for all user-supplied data before processing\u003C/li\u003E\n   \u003Cli\u003EImplement least privilege principles for database accounts to limit potential damage from successful injection\u003C/li\u003E\n   \u003Cli\u003EDeploy web application firewall (WAF) rules to detect and block SQL injection patterns\u003C/li\u003E\n   \u003Cli\u003EConduct regular security testing and vulnerability assessments to identify and remediate similar issues\u003C/li\u003E\n\u003C/ul\u003E\u003C|end_of_box|\u003E"
+  },
+  {
+    "Id": "INC-2025-003",
+    "Date": "2025-12-29T14:29:17.0905909+07:00",
+    "Title": "XSS",
+    "Severity": "HIGH",
+    "Attacker": "192.168.1.1",
+    "Summary": "XSS Hacks",
+    "Tags": [
+      "auth",
+      "xss"
+    ],
+    "AiAnalysis": "\n\u003C|begin_of_box|\u003E\u003Ch3\u003E\uD83D\uDEE1\uFE0F ATTACK VECTOR ANALYSIS\u003C/h3\u003E\n\u003Cp\u003ECross-Site Scripting (XSS) attack detected from \u003Cb\u003E192.168.1.1\u003C/b\u003E. The attacker is attempting to inject malicious client-side scripts into web pages viewed by other users. This is typically accomplished by manipulating input fields or URL parameters to include JavaScript code that will execute in the victim\u0027s browser when they visit the compromised page.\u003C/p\u003E\n\n\u003Ch3\u003E\u26A0\uFE0F BUSINESS \u0026 SYSTEM IMPACT\u003C/h3\u003E\n\u003Cp\u003EA successful XSS attack can lead to session hijacking, data theft, website defacement, and distribution of malware. Attackers can steal sensitive information like cookies, session tokens, or personal data. This could result in compromised user accounts, reputational damage, and potential compliance violations if sensitive customer data is exposed.\u003C/p\u003E\n\n\u003Ch3\u003E\u2705 REMEDIATION STEPS\u003C/h3\u003E\n\u003Cul\u003E\n   \u003Cli\u003EImplement proper input validation and output encoding to prevent script injection\u003C/li\u003E\n   \u003Cli\u003EDeploy Content Security Policy (CSP) headers to restrict where content can be loaded from\u003C/li\u003E\n   \u003Cli\u003EUpdate web application frameworks and libraries to patch known XSS vulnerabilities\u003C/li\u003E\n   \u003Cli\u003EImplement proper authentication and session management with secure, HTTP-only cookies\u003C/li\u003E\n   \u003Cli\u003EConduct regular security testing and vulnerability scanning of web applications\u003C/li\u003E\n\u003C/ul\u003E\u003C|end_of_box|\u003E"
+  }
+]

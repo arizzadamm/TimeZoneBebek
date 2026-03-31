@@ -1,0 +1,786 @@
+﻿<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <script src="js/auth-guard.js"></script>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Geo Tracer</title>
+    <link href='https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;500;700;900&display=swap' rel='stylesheet'>
+    <link rel="stylesheet" href="/style.css">
+    <link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css' />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@6.6.6/css/flag-icons.min.css" />
+    <style>
+        #map {
+            height: 450px;
+            width: 100%;
+            border: 2px solid #333;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+            z-index: 1;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .cyber-input {
+            flex: 1;
+            background: #000;
+            border: 1px solid #333;
+            color: var(--cyan);
+            padding: 15px;
+            font-family: 'JetBrains Mono';
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            transition: 0.3s;
+        }
+
+            .cyber-input:focus {
+                outline: none;
+                border-color: var(--cyan);
+                box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+            }
+
+            .cyber-input:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+            }
+        /* Style saat disabled */
+
+        .cyber-btn {
+            background: #111;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 0 30px;
+            font-family: 'Orbitron';
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+
+            .cyber-btn:hover {
+                background: var(--cyan);
+                color: #000;
+                box-shadow: 0 0 20px var(--cyan);
+            }
+
+        .btn-clear {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+            .btn-clear:hover {
+                background: var(--red);
+                color: #fff;
+                box-shadow: 0 0 20px var(--red);
+            }
+
+        /* Tombol Toggle Auto Hunt khusus */
+        .btn-hunt {
+            font-size: 0.7rem;
+            padding: 5px 15px;
+            margin-left: 10px;
+            border: 1px solid var(--yellow);
+            color: var(--yellow);
+            background: transparent;
+        }
+
+            .btn-hunt.active {
+                background: var(--yellow);
+                color: #000;
+                box-shadow: 0 0 15px var(--yellow);
+                animation: pulse 1s infinite;
+            }
+
+        .geo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .leaflet-overlay-pane path.trace-line {
+            stroke-dasharray: 5, 10;
+            animation: dash 2s linear infinite;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -100;
+            }
+        }
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    {{PRELOADER}}
+    <div class='scanlines'></div>
+    <div class='cyber-grid'></div>
+    {{SIDEBAR}}
+
+<div class='container'>
+    <div class='header-box'>
+        <h1 class='page-title glitch' data-text='GEO ATTACKER'>GEO ATTACKER</h1>
+        <div style="text-align:right;">
+            <span class='status-blink' id="status-text" style="color:var(--green);">● READY</span>
+            <button id="btn-audio" class="cyber-btn btn-hunt" onclick="toggleAudio()" style="border-color:var(--cyan); color:var(--cyan);">
+                🔈 AUDIO: OFF
+            </button>
+            <button id="btn-auto" class="cyber-btn btn-hunt" onclick="toggleLiveMode()">AUTO-HUNT: OFF</button>
+        </div>
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="ip-input" class="cyber-input" placeholder="ENTER TARGET IP..." onkeypress="handleEnter(event)">
+        <button id="btn-scan" class="cyber-btn" onclick="manualTrace()">SCAN</button>
+        <button class="cyber-btn btn-clear" onclick="clearMap()">CLEAR</button>
+    </div>
+
+    <div id='map'></div>
+
+    <div class='geo-grid'>
+        <div class='card hud-card'><span class='label'>Target IP</span><div class='value' id='ip-val'>READY</div></div>
+        <div class='card hud-card'><span class='label'>Location</span><div class='value' id='city-val'>---</div></div>
+        <div class='card hud-card'><span class='label'>Coordinates</span><div class='value' id='coord-val'>---</div></div>
+    </div>
+
+    <div id="intel-panel" class="intel-box">
+        <div class="intel-header">
+            <div class="intel-title">>> INTELLIGENCE DOSSIER</div>
+            <div id="flag-container" class="flag-icon"></div>
+        </div>
+        <div class="intel-data-grid">
+            <div>
+                <div class="intel-row"><span class="intel-label">ISP</span><span class="intel-value" id="int-isp">Loading...</span></div>
+                <div class="intel-row"><span class="intel-label">ORG</span><span class="intel-value" id="int-org">Loading...</span></div>
+                <div class="intel-row"><span class="intel-label">ASN</span><span class="intel-value" id="int-as" style="color:var(--yellow)">Loading...</span></div>
+            </div>
+            <div>
+                <div class="intel-row"><span class="intel-label">TZ</span><span class="intel-value" id="int-tz">Loading...</span></div>
+                <div class="intel-row"><span class="intel-label">REGION</span><span class="intel-value" id="int-reg">Loading...</span></div>
+                <div class="intel-row"><span class="intel-label">TYPE</span><span class="intel-value" id="int-type" style="font-weight:bold;">ANALYZING...</span></div>
+            </div>
+        </div>
+    </div>
+    <div id="threat-log-panel" class="intel-box" style="display:none; border-left: 5px solid var(--red);">
+        <div class="intel-header">
+            <div class="intel-title">>> ACTIVE THREAT LOG (TOP 10)</div>
+            <div style="font-size:0.8rem; color:#666;">SOURCE: SIEM ELASTIC</div>
+        </div>
+
+        <table class="threat-table">
+            <thead>
+                <tr>
+                    <th>ORG / ISP</th>
+                    <th>IP ADDRESS</th>
+                    <th>LOC</th>
+                    <th>ALERTS</th>
+                </tr>
+            </thead>
+            <tbody id="threat-tbody">
+            </tbody>
+        </table>
+    </div>
+    <div id="stats-panel" class="intel-box" style="margin-top:20px;">
+        <div class="intel-header">
+            <div class="intel-title">>> TOP SOURCE NATIONS</div>
+        </div>
+        <div id="country-stats-list" style="padding:10px;">
+        </div>
+    </div>
+</div>
+    <div id="attack-notification-container"></div>
+    <script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>
+    <script>
+        // --- MAP SETUP ---
+        var map = L.map('map').setView([-6.2088, 106.8456], 4);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+        const HOME_LAT = -6.2088; const HOME_LON = 106.8456;
+        var homeIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:var(--cyan); width:10px; height:10px; border-radius:50%; box-shadow:0 0 10px var(--cyan);'></div>", iconSize: [10, 10] });
+        L.marker([HOME_LAT, HOME_LON], { icon: homeIcon }).addTo(map).bindPopup("COMMAND CENTER (HQ)");
+
+        // --- VARIABLES ---
+        const MAX_TRACES = 10; // Bisa lebih banyak utk auto hunt
+        let traceQueue = [];
+        let liveModeInterval = null;
+
+        function handleEnter(e) { if (e.key === 'Enter') manualTrace(); }
+
+        // --- TOGGLE: MANUAL VS AUTO HUNT ---
+        function toggleLiveMode() {
+            const btn = document.getElementById('btn-auto');
+            const input = document.getElementById('ip-input');
+            const scanBtn = document.getElementById('btn-scan');
+            const statusText = document.getElementById('status-text');
+            const staticGrid = document.querySelector('.geo-grid');
+
+            if (liveModeInterval) {
+                // MATIKAN AUTO HUNT -> KEMBALI KE MANUAL
+                clearInterval(liveModeInterval);
+                liveModeInterval = null;
+
+                btn.innerText = "AUTO-HUNT: OFF";
+                btn.classList.remove('active');
+
+                // Hidupkan Manual Input
+                input.disabled = false;
+                scanBtn.disabled = false;
+                input.placeholder = "ENTER TARGET IP...";
+                statusText.innerHTML = "● READY (MANUAL)";
+                statusText.style.color = "var(--green)";
+
+                alert("AUTO-HUNT DEACTIVATED. MANUAL CONTROL RESTORED.");
+                document.getElementById('threat-log-panel').style.display = 'none'; // Sembunyikan Tabel
+            } else {
+                // HIDUPKAN AUTO HUNT
+                alert("AUTO-HUNT ACTIVATED. CONNECTING TO SIEM...");
+
+                // Matikan Manual Input
+                input.disabled = true;
+                scanBtn.disabled = true;
+                input.value = "";
+                input.placeholder = "SYSTEM CONTROLLED BY SIEM...";
+
+                btn.innerText = "AUTO-HUNT: ACTIVE";
+                btn.classList.add('active');
+                statusText.innerHTML = "● LIVE THREAT FEED";
+                statusText.style.color = "var(--red)";
+
+                // 2. TAMPILKAN LOADING STATE DI TABEL (PENTING!)
+                document.getElementById('intel-panel').style.display = 'none';
+                staticGrid.style.display = 'none';
+                const logPanel = document.getElementById('threat-log-panel');
+                logPanel.style.display = 'block';
+
+                const tbody = document.getElementById('threat-tbody');
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align:center; padding:20px; color:var(--cyan);">
+                            <span class="status-blink">>>> FETCHING LAST 7 DAYS DATA...</span>
+                        </td>
+                    </tr>`;
+
+                // 3. PANGGIL DATA SEKETIKA (Jangan tunggu 10 detik)
+                fetchThreats();
+
+                fetchThreats(); // Jalankan sekali langsung
+                liveModeInterval = setInterval(fetchThreats, 5000); 
+            }
+        }
+
+        // --- LOGIC 1: MANUAL TRACE ---
+        async function manualTrace() {
+            const inputIp = document.getElementById('ip-input').value;
+            if (!inputIp) return;
+
+            try {
+                const url = `/api/geo-trace?ip=${inputIp}`;
+                // Header Auth jangan lupa jika diperlukan
+                const r = await fetch(url, { headers: { 'X-API-KEY': API_KEY } });
+
+                if (r.status === 429) { alert("RATE LIMIT!"); return; }
+                const d = await r.json();
+
+                if (d.status === 'success') {
+                    updateUI(d);
+                    updateIntelCard(d);
+
+                    // --- PERBAIKAN: Generate Config untuk Manual Trace ---
+                    // Kita buat config manual agar warnanya Cyan (atau sesuai getAttackConfig)
+                    const manualConfig = { type: 'MANUAL SCAN', color: '#00ffff', icon: '🔍' };
+
+                    addTraceToMap(d.lat, d.lon, d.query, manualConfig);
+                    // ---------------------------------------------------
+
+                } else { alert("IP Not Found"); }
+            } catch (e) {
+                console.error(e);
+                alert("Trace Failed");
+            }
+        }
+
+        function showAttackToast(data, attackConfig) {
+            const container = document.getElementById('attack-notification-container');
+
+            // --- PERBAIKAN: DEFAULT CONFIG ---
+            const config = attackConfig || {
+                type: 'UNKNOWN THREAT',
+                color: '#ff3366', // Merah Default
+                icon: '⚠'
+            };
+            // ---------------------------------
+
+            const toast = document.createElement('div');
+            toast.className = 'attack-toast';
+
+            toast.style.borderColor = config.color;
+            toast.style.borderLeft = `5px solid ${config.color}`;
+            toast.style.boxShadow = `0 0 15px ${config.color}40`;
+
+            const cc = data.country ? data.country.toLowerCase() : "xx";
+            const flagHtml = `<span class="fi fi-${cc}"></span>`;
+
+            toast.innerHTML = `
+        <div class="toast-header" style="color:${config.color}">
+            <span>${config.icon} ${config.type}</span>
+            <span>${flagHtml}</span>
+        </div>
+        <div class="toast-row">
+            <span class="toast-label">TARGET IP:</span>
+            <span class="toast-val" style="color:#fff;">${data.ip}</span>
+        </div>
+        <div class="toast-row">
+            <span class="toast-label">LOCATION:</span>
+            <span class="toast-val">${data.country || "Unknown"}</span>
+        </div>
+        <div class="toast-row">
+            <span class="toast-label">COORD:</span>
+            <span class="toast-val" style="font-size:0.8rem;">${data.lat}, ${data.lon}</span>
+        </div>
+    `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+        // --- SONIC AWARENESS ENGINE (WEB AUDIO API) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let isAudioEnabled = false;
+        let seenIPs = new Set(); // Untuk melacak IP yang sudah pernah bunyi
+
+        function toggleAudio() {
+            const btn = document.getElementById('btn-audio');
+
+            // Browser Policy: Resume AudioContext on user gesture
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            isAudioEnabled = !isAudioEnabled;
+
+            if (isAudioEnabled) {
+                btn.innerHTML = "🔊 AUDIO: ON";
+                btn.classList.add('active');
+                playSonar();
+                if ('speechSynthesis' in window) {
+                    const msg = new SpeechSynthesisUtterance("Audio systems online.");
+                    msg.rate = 1.2; msg.pitch = 0.8;
+                    window.speechSynthesis.speak(msg);
+                }
+            } else {
+                btn.innerHTML = "🔈 AUDIO: OFF";
+                btn.classList.remove('active');
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        // 1. SOUND: SONAR PING (High Tech Blip)
+        function playSonar() {
+            if (!isAudioEnabled) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime); // Volume rendah (0.1) biar tidak berisik
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        // 2. SOUND: CRITICAL ALARM (Low Siren)
+        function playAlarm() {
+            if (!isAudioEnabled) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sawtooth'; // Suara kasar
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.5); // Turun nada
+
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        // 3. SOUND: ROBOT VOICE (TTS)
+        let isSpeaking = false;
+
+        function speakThreat(countriesSet) {
+            if (!isAudioEnabled || !('speechSynthesis' in window)) return;
+
+            const uniqueCountries = Array.from(countriesSet).filter(c => c && c !== 'XX');
+            if (uniqueCountries.length === 0) return;
+
+            const countryText = uniqueCountries.slice(0, 2).join(" and ");
+            const suffix = uniqueCountries.length > 2 ? " and others" : "";
+
+
+            const text = `Warning. Incoming traffic from ${countryText}${suffix}.`;
+
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.rate = 1.1;
+            msg.pitch = 0.7;
+            msg.volume = 0.8;
+
+            const voices = window.speechSynthesis.getVoices();
+            const botVoice = voices.find(v => v.name.includes("Google US English")) || voices[0];
+            if (botVoice) msg.voice = botVoice;
+
+
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(msg);
+        }
+
+        // --- LOGIC 2: AUTO THREATS (ELASTIC) ---
+        async function fetchThreats() {
+            try {
+                /*   const r = await fetch('/api/threats');*/
+                const res = await fetch('/api/threats', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-KEY': API_KEY
+                    }
+                });
+                const latestTop10 = await res.json();
+
+                if (!Array.isArray(latestTop10) || latestTop10.length === 0) {
+                    // Handle jika kosong
+                    document.getElementById('threat-tbody').innerHTML = '<tr><td colspan="4" style="text-align:center;">NO THREATS DETECTED IN LAST 7 DAYS</td></tr>';
+                    return;
+                }
+
+
+                renderThreatTable(latestTop10);
+                let newThreatsCount = 0;
+                let highestSeverity = 0;
+                let newCountries = new Set(); // Untuk menampung negara unik
+                // 2. AUDIO & VISUAL LOGIC
+                // Kita hanya ingin bunyi/animasi peta untuk IP yang BENAR-BENAR BARU muncul di list
+                latestTop10.forEach((t, i) => {
+                    // Cek apakah IP ini baru
+                    if (!seenIPs.has(t.ip)) {
+                        seenIPs.add(t.ip);
+                        newThreatsCount++;
+
+                        if (t.country) newCountries.add(t.country);
+                        if (t.count > highestSeverity) highestSeverity = t.count;
+                        const atkConf = getAttackConfig(t);
+                        // 1. Animasi Peta
+                        setTimeout(() => {
+                            addTraceToMap(t.lat, t.lon, t.ip);
+                        }, i * 300);
+
+                        // 2. MUNCULKAN POP-UP NOTIFIKASI (Dengan delay sedikit agar berurutan)
+                        setTimeout(() => {
+                            showAttackToast(t);
+                        }, i * 500); 
+                    }
+                });
+                // --- EKSEKUSI SUARA SEKALI SAJA PER BATCH ---
+                if (newThreatsCount > 0) {
+                    if (highestSeverity > 500) {
+                        playAlarm();
+                    } else {
+
+                        playSonar();
+                    }
+
+                    setTimeout(() => {
+                        speakThreat(newCountries);
+                    }, 1000);
+                }
+                const countryCounts = {};
+                latestTop10.forEach(t => {
+                    const c = t.country || "UNKNOWN";
+                    countryCounts[c] = (countryCounts[c] || 0) + t.count;
+                });
+
+                // 2. Sort & Ambil Top 5
+                const sortedCountries = Object.entries(countryCounts)
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, 5);
+
+                // 3. Render Bar Chart
+                const statsList = document.getElementById('country-stats-list');
+                statsList.innerHTML = ''; // Reset
+
+                const maxVal = sortedCountries[0] ? sortedCountries[0][1] : 1; // Untuk skala %
+
+                sortedCountries.forEach(([country, count]) => {
+                    const percent = (count / maxVal) * 100;
+                    const cc = (country !== "UNKNOWN") ? country.toLowerCase() : "xx";
+
+                    // Warna bar (Merah jika > 80%, Kuning sisanya)
+                    const barColor = percent > 80 ? 'var(--red)' : 'var(--cyan)';
+
+                    const item = document.createElement('div');
+                    item.style.marginBottom = "8px";
+                    item.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:2px; color:#ccc;">
+                            <span><span class="fi fi-${cc}"></span> ${country}</span>
+                            <span>${count}</span>
+                        </div>
+                        <div style="background:#222; height:6px; width:100%; border-radius:3px; overflow:hidden;">
+                            <div style="width:${percent}%; background:${barColor}; height:100%; box-shadow:0 0 5px ${barColor}; transition: width 1s;"></div>
+                        </div>
+                    `;
+                    statsList.appendChild(item);
+                });
+
+                // Clean up memory jika terlalu banyak cache IP
+                if (seenIPs.size > 500) seenIPs.clear();
+
+            } catch (e) { console.error("SIEM Error", e); }
+        }
+        function renderThreatTable(data) {
+            const tbody = document.getElementById('threat-tbody');
+            tbody.innerHTML = ''; // Bersihkan data lama
+
+            data.forEach(t => {
+                const row = document.createElement('tr');
+                row.className = 'row-animate'; // Efek slide in
+
+                row.style.cursor = 'pointer';
+                row.onclick = () => focusOnThreat(t.lat, t.lon, t.ip, t.country);
+                let severityClass = 'lvl-low';
+                if (t.count > 100) severityClass = 'lvl-med';
+                if (t.count > 500) severityClass = 'lvl-high';
+
+                //// Bendera
+                //const flag = t.country ? t.country.toUpperCase().replace(/./g, c => String.fromCodePoint(c.charCodeAt(0) + 127397)) : "🚩";
+                const cc = t.country ? t.country.toLowerCase() : "xx";
+                const flagHtml = `<span class="fi fi-${cc}" style="font-size:1.2rem; border-radius:2px;"></span>`;
+
+                row.innerHTML = `
+                    <td>${t.country || "UNK"}</td>
+                    <td style="color:#fff;">${t.ip}</td>
+                    <td>${flagHtml}</td> <td class="${severityClass}">${t.count} HITS</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        function focusOnThreat(lat, lon, ip, country) {
+            // 1. Efek Terbang (Smooth Animation)
+            map.flyTo([lat, lon], 8, {
+                animate: true,
+                duration: 1.5 // Durasi terbang 1.5 detik
+            });
+
+            // 2. Buat Marker Sementara (Highlight)
+            const highlightIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div style='border: 2px dashed var(--yellow); width:40px; height:40px; border-radius:50%; animation:spin 4s linear infinite; position:relative; top:-14px; left:-14px;'></div>`,
+                iconSize: [10, 10]
+            });
+
+            const highlight = L.marker([lat, lon], { icon: highlightIcon }).addTo(map);
+
+            // 3. Tampilkan Popup
+            highlight.bindPopup(`<b style="color:var(--yellow)">TARGET LOCKED</b><br>${ip}<br>${country}`).openPopup();
+
+            // 4. Hapus highlight setelah 5 detik
+            setTimeout(() => map.removeLayer(highlight), 5000);
+        }
+
+        // --- SHARED FUNCTIONS ---
+        function updateUI(d) {
+            document.getElementById('ip-val').innerText = d.query;
+            document.getElementById('city-val').innerText = (d.city || "") + ', ' + (d.countryCode || d.country || "");
+            document.getElementById('coord-val').innerText = d.lat + ', ' + d.lon;
+        }
+
+        function updateIntelCard(d) {
+            const panel = document.getElementById('intel-panel');
+            panel.style.display = 'block';
+            document.getElementById('int-isp').innerText = d.isp || "Unknown";
+            document.getElementById('int-org').innerText = d.org || d.isp;
+            document.getElementById('int-as').innerText = d.as || "N/A";
+            document.getElementById('int-tz').innerText = d.timezone || "UTC";
+            document.getElementById('int-reg').innerText = (d.regionName || "") + " " + (d.zip || "");
+            //const flagEmoji = d.countryCode ? d.countryCode.toUpperCase().replace(/./g, c => String.fromCodePoint(c.charCodeAt(0) + 127397)) : "🏳️";
+            //document.getElementById('flag-container').innerText = flagEmoji;
+            const cc = d.countryCode ? d.countryCode.toLowerCase() : "xx";
+            document.getElementById('flag-container').innerHTML = `<span class="fi fi-${cc}"></span>`;
+
+            const ispUpper = (d.isp + d.org).toUpperCase();
+            const elType = document.getElementById('int-type');
+            if (ispUpper.includes("CLOUD") || ispUpper.includes("HOSTING") || ispUpper.includes("AWS")) {
+                elType.innerText = "DATA CENTER / BOT"; elType.style.color = "var(--red)";
+            } else {
+                elType.innerText = "RESIDENTIAL"; elType.style.color = "var(--green)";
+            }
+        }
+
+        // --- UPDATE: REVERSE ANIMATION (INCOMING ATTACK) ---
+        // UPDATE: Terima parameter configWarna
+        function addTraceToMap(targetLat, targetLon, labelIP, attackConfig) {
+
+            // --- PERBAIKAN: DEFAULT CONFIG (Agar tidak error jika null) ---
+            const config = attackConfig || {
+                type: 'MANUAL TRACE',
+                color: '#00ffff', // Cyan untuk manual
+                icon: '🔍'
+            };
+            // -------------------------------------------------------------
+
+            // 1. FIFO Queue
+            if (traceQueue.length >= MAX_TRACES) {
+                const old = traceQueue.shift();
+                cancelAnimationFrame(old.animFrame);
+                map.removeLayer(old.poly);
+                map.removeLayer(old.marker);
+                map.removeLayer(old.bullet);
+            }
+
+            // 2. Kalkulasi Bezier
+            var latlngs = [];
+            var offsetX = (HOME_LON - targetLon) / 2;
+            var offsetY = (HOME_LAT - targetLat) / 2;
+            var r = Math.sqrt(Math.pow(offsetX, 2) + Math.pow(offsetY, 2));
+            var theta = Math.atan2(offsetY, offsetX);
+            var thetaOffset = 3.14 / 10;
+            var r2 = (r / 2) / Math.cos(thetaOffset);
+            var theta2 = theta + thetaOffset;
+            var midX = (r2 * Math.cos(theta2)) + targetLon;
+            var midY = (r2 * Math.sin(theta2)) + targetLat;
+
+            for (var t = 0; t <= 1; t += 0.01) {
+                var lat = (1 - t) * (1 - t) * targetLat + 2 * (1 - t) * t * midY + t * t * HOME_LAT;
+                var lon = (1 - t) * (1 - t) * targetLon + 2 * (1 - t) * t * midX + t * t * HOME_LON;
+                latlngs.push([lat, lon]);
+            }
+
+            // 3. GAMBAR GARIS (Pakai config.color)
+            const newPoly = L.polyline(latlngs, {
+                color: config.color,
+                weight: 2,
+                opacity: 0.8,
+                className: 'trace-line'
+            }).addTo(map);
+            newPoly.on('mouseover', function (e) {
+                this.setStyle({ weight: 4, opacity: 1 }); // Garis menebal saat hover
+                newMarker.openPopup(); // Buka popup info IP
+            });
+            newPoly.on('mouseout', function (e) {
+                this.setStyle({ weight: 2, opacity: 0.5 }); // Kembali normal
+            });
+
+            // 4. MARKER MUSUH
+            const targetIcon = L.divIcon({
+                className: 'custom-div-icon',
+                            html: `
+                <div style="position:relative; width:20px; height:20px;">
+                    <div style='position:absolute; top:8px; left:8px; width:4px; height:4px; background:${config.color}; border-radius:50%; box-shadow:0 0 10px ${config.color};'></div>
+        
+                    <div style='
+                        position:absolute; top:0; left:0; width:100%; height:100%;
+                        border: 1px dashed ${config.color};
+                        border-radius: 50%;
+                        animation: spin 3s linear infinite;
+                        opacity: 0.7;
+                    '></div>
+        
+                    <div style='position:absolute; top:50%; left:-20%; width:140%; height:1px; background:${config.color}; opacity:0.3;'></div>
+                    <div style='position:absolute; left:50%; top:-20%; height:140%; width:1px; background:${config.color}; opacity:0.3;'></div>
+                </div>`,
+                iconSize: [20, 20], // Ukuran diperbesar sedikit
+                iconAnchor: [10, 10] // Titik tengah
+            });
+
+            // Perbaikan bindPopup agar aman membaca .type
+            const newMarker = L.marker([targetLat, targetLon], { icon: targetIcon })
+                .addTo(map)
+                .bindPopup(`<b style="color:${config.color}">${labelIP}</b><br>${config.type}`);
+
+            // 5. BULLET
+            const bulletIcon = L.divIcon({
+                className: 'bullet-icon',
+                html: `<div style='background:#fff; width:4px; height:4px; border-radius:50%; box-shadow:0 0 8px ${config.color};'></div>`,
+                iconSize: [4, 4], iconAnchor: [2, 2]
+            });
+            const newBullet = L.marker([targetLat, targetLon], { icon: bulletIcon }).addTo(map);
+
+            // 6. Animasi
+            let step = 0;
+            let animId;
+            function animate() {
+                step += 2;
+                if (step >= latlngs.length) step = 0;
+                newBullet.setLatLng(latlngs[step]);
+                animId = requestAnimationFrame(animate);
+            }
+            animate();
+
+            traceQueue.push({ poly: newPoly, marker: newMarker, bullet: newBullet, animFrame: animId });
+        }
+        function clearMap() {
+            traceQueue.forEach(i => { cancelAnimationFrame(i.animFrame); map.removeLayer(i.poly); map.removeLayer(i.marker); map.removeLayer(i.bullet); });
+            traceQueue = [];
+            document.getElementById('ip-val').innerText = "CLEARED";
+            document.getElementById('intel-panel').style.display = 'none';
+        }
+        function getAttackConfig(threatData) {
+
+            let type = "GENERIC";
+            let color = "#00ffff"; // Default Cyan
+            let icon = "⚠";
+
+            const types = ['DDOS', 'MALWARE', 'BRUTEFORCE', 'WEB_ATTACK'];
+            const selectedType = threatData.type || types[Math.floor(Math.random() * types.length)];
+
+            switch (selectedType) {
+                case 'DDOS':
+                    type = "VOLUMETRIC DDoS";
+                    color = "var(--col-ddos)";
+                    icon = "🔥";
+                    break;
+                case 'BRUTEFORCE':
+                    type = "SSH BRUTEFORCE";
+                    color = "var(--col-brute)";
+                    icon = "🔓";
+                    break;
+                case 'MALWARE':
+                    type = "BOTNET / MALWARE";
+                    color = "var(--col-malware)";
+                    icon = "🦠";
+                    break;
+                case 'WEB_ATTACK':
+                    type = "SQL INJECTION";
+                    color = "var(--col-web)";
+                    icon = "💉";
+                    break;
+                default:
+                    type = "SUSPICIOUS TRAFFIC";
+                    color = "#00ffff";
+            }
+
+            return { type, color, icon };
+        }
+    </script>
+</body>
+</html>

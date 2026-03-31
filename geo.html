@@ -1,0 +1,779 @@
+﻿<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Geo Tracer 3D // SOC WAR ROOM</title>
+
+    <script src="js/auth-guard.js"></script>
+
+    <link href='https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;500;700;900&display=swap' rel='stylesheet'>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@6.6.6/css/flag-icons.min.css" />
+
+    <script src="//unpkg.com/three@0.149.0/build/three.min.js"></script>
+    <script src="//unpkg.com/globe.gl@2.30.0/dist/globe.gl.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+    <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+
+    <style>
+        /* --- CYBER BUTTON --- */
+        .cyber-btn {
+            --primary-color: var(--cyan);
+            position: relative;
+            background: rgba(0, 20, 20, 0.6);
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 10px 25px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+            .cyber-btn:hover {
+                background: var(--primary-color);
+                color: #000;
+                box-shadow: 0 0 25px var(--primary-color);
+                font-weight: 900;
+            }
+
+        .btn-clear {
+            --primary-color: var(--red);
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        .btn-hunt {
+            --primary-color: var(--yellow);
+            border-color: var(--yellow);
+            color: var(--yellow);
+        }
+
+        /* --- GLOBE CONTAINER --- */
+        #globeViz {
+            width: 100%;
+            height: 550px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #000;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8), 0 0 20px rgba(0,255,255,0.05);
+        }
+
+        /* Toast & Others */
+        #attack-notification-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .attack-toast {
+            background: rgba(5, 5, 5, 0.9);
+            border: 1px solid #333;
+            padding: 15px;
+            font-family: 'Orbitron';
+            color: #fff;
+            min-width: 280px;
+            border-left-width: 4px;
+            backdrop-filter: blur(4px);
+            animation: slideIn 0.4s ease-out;
+            box-shadow: 0 0 15px rgba(0,0,0,0.8);
+        }
+
+        .toast-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+        }
+
+        .toast-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono';
+            margin-bottom: 2px;
+        }
+
+        .toast-val {
+            color: var(--cyan);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .status-blink {
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .search-box {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .cyber-input {
+            flex: 1;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            color: #fff;
+            padding: 0 20px;
+            font-family: 'JetBrains Mono';
+            font-size: 1rem;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+            .cyber-input:focus {
+                outline: none;
+                border-color: var(--cyan);
+                box-shadow: 0 0 10px rgba(0,255,255,0.1);
+            }
+    </style>
+</head>
+<body>
+    {{PRELOADER}}
+    <div class='scanlines'></div>
+    <div class='cyber-grid'></div>
+    {{SIDEBAR}}
+
+    <div class='container'>
+        <div class='header-box' style="border-bottom: 2px solid var(--cyan); padding-bottom: 20px; margin-bottom: 30px;">
+            <h1 class='page-title glitch' data-text='GEO ATTACKER 3D'>GEO ATTACKER 3D</h1>
+            <div style="text-align:right; margin-top: 10px;">
+                <span class='status-blink' id="status-text" style="color:var(--green); margin-right: 15px; font-family: 'Orbitron';">● SYSTEM ONLINE</span>
+                <button id="btn-audio" class="cyber-btn btn-hunt" onclick="toggleAudio()">🔈 AUDIO: OFF</button>
+                <button id="btn-auto" class="cyber-btn btn-hunt" onclick="toggleLiveMode()">AUTO-HUNT: OFF</button>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="ip-input" class="cyber-input" placeholder="ENTER TARGET IP..." onkeypress="handleEnter(event)">
+            <button id="btn-scan" class="cyber-btn" onclick="manualTrace()">INITIATE SCAN</button>
+            <button class="cyber-btn btn-clear" onclick="resetGlobe()">RESET</button>
+        </div>
+
+        <div id='globeViz'></div>
+
+        <div class='geo-grid'>
+            <div class='card hud-card'><span class='label'>Target IP</span><div class='value' id='ip-val'>READY</div></div>
+            <div class='card hud-card'><span class='label'>Location</span><div class='value' id='city-val'>---</div></div>
+            <div class='card hud-card'><span class='label'>Coordinates</span><div class='value' id='coord-val'>---</div></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+            <div id="intel-panel" class="intel-box" style="height: 100%;">
+                <div class="intel-header">
+                    <div class="intel-title">>> INTELLIGENCE DOSSIER</div>
+                    <div id="flag-container" class="flag-icon"></div>
+                </div>
+                <div class="intel-data-grid">
+                    <div>
+                        <div class="intel-row"><span class="intel-label">ISP</span><span class="intel-value" id="int-isp">-</span></div>
+                        <div class="intel-row"><span class="intel-label">ORG</span><span class="intel-value" id="int-org">-</span></div>
+                        <div class="intel-row"><span class="intel-label">ASN</span><span class="intel-value" id="int-as" style="color:var(--yellow)">-</span></div>
+                    </div>
+                    <div>
+                        <div class="intel-row"><span class="intel-label">TZ</span><span class="intel-value" id="int-tz">-</span></div>
+                        <div class="intel-row"><span class="intel-label">REGION</span><span class="intel-value" id="int-reg">-</span></div>
+                        <div class="intel-row"><span class="intel-label">TYPE</span><span class="intel-value" id="int-type" style="font-weight:bold;">-</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="stats-panel" class="intel-box" style="height: 100%;">
+                <div class="intel-header">
+                    <div class="intel-title">>> THREAT ORIGIN STATS</div>
+                    <div style="font-size:0.7rem; color:#666;">LIVE AGGREGATION</div>
+                </div>
+                <div id="country-stats-list" style="padding:15px;">
+                    <div style="color:#444; text-align:center; padding-top:20px; font-size: 0.8rem;">AWAITING DATA STREAM...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="threat-log-panel" class="intel-box" style="display:none; border-left: 4px solid var(--red); margin-top: 20px;">
+            <div class="intel-header">
+                <div class="intel-title">>> ACTIVE THREAT FEED (LAST 10)</div>
+                <div style="font-size:0.7rem; color:#666;">SOURCE: SIEM ELASTIC</div>
+            </div>
+            <table class="threat-table" style="width:100%; font-size:0.8rem;">
+                <thead>
+                    <tr style="text-align:left; color:#666;">
+                        <th style="padding:10px;">COUNTRY</th>
+                        <th>IP ADDRESS</th>
+                        <th style="text-align:center;">FLAG</th>
+                        <th>HITS</th>
+                    </tr>
+                </thead>
+                <tbody id="threat-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="attack-notification-container"></div>
+
+    <script>
+        // ==========================================
+        // 1. GLOBAL CONFIG
+        // ==========================================
+        let world = null;
+        const LOCAL_TOKEN = localStorage.getItem("CSIRT_KEY") || "";
+        const HOME_LAT = -6.2088;
+        const HOME_LON = 106.8456;
+
+        let isAudioEnabled = false;
+        let seenIPs = new Set();
+        let typeInstances = {};
+
+        // ==========================================
+        // 2. AUDIO SETUP
+        // ==========================================
+        const sfx = {
+            // 1. SONAR: Suara radar deteksi
+            // 'spatial: true' agar kita bisa mainkan efek 3D (kiri/kanan)
+            sonar: new Howl({
+                src: ['/assets/sounds/sonar.mp3'],
+                volume: 0.6,
+                spatial: true
+            }),
+            // 2. ALARM: Suara sirene bahaya
+            // 'loop: true' agar berbunyi terus sampai dimatikan
+            alarm: new Howl({
+                src: ['/assets/sounds/alarm.mp3'],
+                volume: 0.4,
+                loop: true,
+                rate: 1.0
+            }),
+
+            // 3. LOCK: Suara "Target Acquired" (Singkat)
+            lock: new Howl({
+                src: ['/assets/sounds/lock.mp3'],
+                volume: 0.7
+            })
+        };
+
+        function toggleAudio() {
+            const btn = document.getElementById('btn-audio');
+            isAudioEnabled = !isAudioEnabled;
+            if (isAudioEnabled) {
+                btn.innerHTML = "🔊 AUDIO: ON";
+                btn.classList.add('active');
+                Howler.mute(false);
+                if ('speechSynthesis' in window) {
+                    const msg = new SpeechSynthesisUtterance("Audio Systems Online.");
+                    msg.rate = 1.0;
+                    msg.pitch = 0.8;
+                    window.speechSynthesis.speak(msg);
+                }
+            } else {
+                btn.innerHTML = "🔈 AUDIO: OFF";
+                btn.classList.remove('active');
+                Howler.mute(true);
+                if (sfx.alarm) sfx.alarm.stop();
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        function playSonar(lon = 0) {
+            if (!isAudioEnabled) return;
+            let pan = lon / 180;
+            let id = sfx.sonar.play();
+            sfx.sonar.stereo(pan, id);
+        }
+
+        function playAlarm(isActive) {
+            if (!isAudioEnabled) return;
+            if (isActive) {
+                if (!sfx.alarm.playing()) {
+                    sfx.alarm.fade(0, 0.3, 1000);
+                    sfx.alarm.play();
+                }
+            } else {
+                if (sfx.alarm.playing()) {
+                    sfx.alarm.fade(0.3, 0, 1000);
+                    setTimeout(() => sfx.alarm.stop(), 1000);
+                }
+            }
+        }
+
+
+        function playLockSound() {
+            if (isAudioEnabled) sfx.lock.play();
+        }
+
+        function speakThreat(countriesSet) {
+            if (!isAudioEnabled || !('speechSynthesis' in window)) return;
+            const uniqueCountries = Array.from(countriesSet).filter(c => c && c.toLowerCase() !== 'xx');
+            if (uniqueCountries.length === 0) return;
+            const text = `Alert. Traffic from ${uniqueCountries.slice(0, 2).join(", ")}.`;
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.rate = 0.9; msg.pitch = 0.7;
+            const voices = window.speechSynthesis.getVoices();
+            const bot = voices.find(v => v.name.includes('Google US English') || v.name.includes('David')) || voices[0];
+            if (bot) msg.voice = bot;
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(msg);
+        }
+
+        // ==========================================
+        // 3. GLOBE 3D INITIALIZATION
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('globeViz');
+
+            try {
+                world = Globe()
+                    (container)
+                    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
+                    .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+                    //.backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
+                    .atmosphereColor("#00ffff")
+                    .atmosphereAltitude(0.20)
+                    .arcColor('color')
+                    .arcDashLength(0.4)
+                    .arcDashGap(2)
+                    .arcDashAnimateTime(2000)
+                    .arcStroke(1.5)
+                    .ringsData([])
+                    .ringColor('color')
+                    .ringMaxRadius(5)
+                    .ringPropagationSpeed(3)
+                    .ringRepeatPeriod(1000) 
+                    .labelsData([])
+                    .labelLat('lat')
+                    .labelLng('lon')
+                    .labelText('text')
+                    .labelSize(0.6)
+                    .labelDotRadius(0.3)
+                    .labelColor(() => 'rgba(255, 255, 255, 0.85)')
+                    .labelResolution(3)
+                    .labelAltitude(0.01)
+                    .width(container.offsetWidth)
+                    .height(container.offsetHeight)
+                    .showGraticules(true);
+
+                const scene = world.scene();
+
+                // Buat Geometri Bintang
+                const starGeometry = new THREE.BufferGeometry();
+                const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7 }); // Bintang putih kecil
+
+                const starCount = 3000; // Jumlah bintang
+                const starPositions = [];
+
+                for (let i = 0; i < starCount; i++) {
+                    // Sebar bintang secara acak di kejauhan (x, y, z)
+                    const x = (Math.random() - 0.5) * 2000;
+                    const y = (Math.random() - 0.5) * 2000;
+                    const z = (Math.random() - 0.5) * 2000;
+                    starPositions.push(x, y, z);
+                }
+
+                starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+                const stars = new THREE.Points(starGeometry, starMaterial);
+
+                scene.add(stars); // Masukkan ke scene
+                world.controls().autoRotate = true;
+                world.controls().autoRotateSpeed = 0.5;
+                world.pointOfView({ lat: HOME_LAT, lng: HOME_LON, altitude: 2.5 });
+
+                window.addEventListener('resize', () => {
+                    world.width(container.offsetWidth);
+                    world.height(container.offsetHeight);
+                });
+
+                console.log("GLOBE ONLINE");
+
+            } catch (e) {
+                console.error("Globe Error:", e);
+                container.innerHTML = "<div style='color:red; padding:20px; text-align:center;'>3D ENGINE ERROR</div>";
+            }
+        });
+
+        function resetGlobe() {
+            if (!world) return;
+            world.arcsData([]);
+            world.ringsData([]);
+            world.labelsData([]);
+            document.getElementById('ip-val').innerText = "CLEARED";
+            document.getElementById('intel-panel').style.display = 'block';
+            ['int-isp', 'int-org', 'int-as', 'int-tz', 'int-reg', 'int-type'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = '-';
+            });
+        }
+
+        // ==========================================
+        // 4. WEBSOCKET REAL-TIME ENGINE
+        // ==========================================
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/threatHub")
+            .withAutomaticReconnect()
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        connection.on("ReceiveThreats", (data) => {
+            processThreatData(data);
+        });
+
+        // STATUS MONITORING
+        connection.onreconnecting(error => {
+            const statusText = document.getElementById('status-text');
+            statusText.innerText = "● RECONNECTING SOCKET...";
+            statusText.style.color = "var(--yellow)";
+            statusText.classList.add('status-blink');
+        });
+
+        connection.onreconnected(connectionId => {
+            const statusText = document.getElementById('status-text');
+            statusText.innerText = "● LIVE FEED (SOCKET ACTIVE)";
+            statusText.style.color = "var(--red)";
+            statusText.classList.remove('status-blink');
+        });
+
+        connection.onclose(error => {
+            const btn = document.getElementById('btn-auto');
+            if (btn.classList.contains('active')) {
+                const statusText = document.getElementById('status-text');
+                statusText.innerText = "● SOCKET DEAD / OFFLINE";
+                statusText.style.color = "#666";
+                statusText.classList.remove('status-blink');
+                alert("WEBSOCKET CONNECTION LOST.");
+            }
+        });
+
+        async function startStream() {
+            const statusText = document.getElementById('status-text');
+            try {
+                statusText.innerText = "● INITIALIZING SOCKET...";
+                statusText.style.color = "var(--yellow)";
+                await connection.start();
+                console.log("🟢 SOCKET CONNECTED");
+                statusText.innerText = "● LIVE FEED (SOCKET ACTIVE)";
+                statusText.style.color = "var(--red)";
+                return true;
+            } catch (err) {
+                console.error("🔴 SOCKET ERROR:", err);
+                statusText.innerText = "● SOCKET CONNECTION FAILED";
+                statusText.style.color = "var(--red)";
+                return false;
+            }
+        }
+
+        async function stopStream() {
+            await connection.stop();
+            console.log("🔴 SOCKET DISCONNECTED");
+        }
+
+        // ==========================================
+        // 5. LOGIC & INTERACTION
+        // ==========================================
+        function handleEnter(e) { if (e.key === 'Enter') manualTrace(); }
+
+        async function manualTrace() {
+            const inputIp = document.getElementById('ip-input').value;
+            if (!inputIp) return;
+            setHUDState('MANUAL');
+
+            try {
+                const url = `/api/geo-trace?ip=${inputIp}`;
+                const r = await fetch(url, { headers: { 'X-API-KEY': LOCAL_TOKEN } });
+                const d = await r.json();
+
+                if (d.status === 'success') {
+                    updateUI(d);
+                    updateIntelCard(d);
+
+                    const color = '#00ffff';
+                    if (world) {
+                        world.arcsData([{
+                            startLat: d.lat, startLng: d.lon,
+                            endLat: HOME_LAT, endLng: HOME_LON,
+                            color: [color, '#ffffff']
+                        }]);
+                        world.ringsData([{ lat: d.lat, lon: d.lon, color: color }]);
+                        world.labelsData([{ lat: d.lat, lon: d.lon, text: d.query, color: color }]);
+                        world.pointOfView({ lat: d.lat, lng: d.lon, altitude: 1.5 }, 1500);
+                    }
+                    playLockSound();
+                } else { alert("IP Not Found"); }
+            } catch (e) {
+                console.error(e);
+                alert("Trace Failed");
+            }
+        }
+
+        async function toggleLiveMode() {
+            const btn = document.getElementById('btn-auto');
+            const input = document.getElementById('ip-input');
+            const scanBtn = document.getElementById('btn-scan');
+            const statusText = document.getElementById('status-text');
+
+            if (connection.state === signalR.HubConnectionState.Connected) {
+                await stopStream();
+                btn.innerText = "AUTO-HUNT: OFF";
+                btn.classList.remove('active');
+                input.disabled = false;
+                scanBtn.disabled = false;
+                statusText.innerText = "● SYSTEM READY (MANUAL)";
+                statusText.style.color = "var(--green)";
+                setHUDState('MANUAL');
+            } else {
+                const connected = await startStream();
+                if (!connected) {
+                    statusText.innerText = "● SYSTEM READY";
+                    statusText.style.color = "var(--green)";
+                    return;
+                }
+                input.disabled = true;
+                scanBtn.disabled = true;
+                btn.innerText = "AUTO-HUNT: ACTIVE";
+                btn.classList.add('active');
+                document.getElementById('threat-log-panel').style.display = 'block';
+                setHUDState('AUTO');
+            }
+        }
+
+        function processThreatData(latestTop10) {
+            if (!world) return;
+            renderThreatTable(latestTop10);
+
+            const arcs = [];
+            const rings = [];
+            const labels = [];
+            let newThreatsCount = 0;
+            let highestSeverity = 0;
+            let newCountries = new Set();
+
+            latestTop10.forEach(t => {
+                let color = '#00ffff'; // Default (<= 200)
+                if (t.count > 500) color = '#ff0000'; // > 500 Red
+                else if (t.count > 200) color = '#ffff00'; // > 200 Yellow
+
+                const atkConf = getAttackConfig(t);
+
+                arcs.push({
+                    startLat: t.lat, startLng: t.lon,
+                    endLat: HOME_LAT, endLng: HOME_LON,
+                    color: [color, '#ffffff']
+                });
+                rings.push({ lat: t.lat, lon: t.lon, color: color });
+                labels.push({ lat: t.lat, lon: t.lon, text: t.ip, color: color });
+
+                if (!seenIPs.has(t.ip)) {
+                    seenIPs.add(t.ip);
+                    newThreatsCount++;
+                    if (t.country) newCountries.add(t.country);
+                    if (t.count > highestSeverity) highestSeverity = t.count;
+
+                    setTimeout(() => {
+                        showAttackToast(t, { color: color, type: atkConf.type, icon: atkConf.icon });
+                    }, Math.random() * 1000);
+                }
+            });
+
+            world.arcsData(arcs);
+            world.ringsData(rings);
+            world.labelsData(labels);
+
+            if (newThreatsCount > 0) {
+                if (highestSeverity > 500) playAlarm(true);
+                else { playAlarm(false); playSonar(latestTop10[0].lon); }
+                playLockSound();
+                setTimeout(() => speakThreat(newCountries), 1000);
+            } else { playAlarm(false); }
+
+            updateStatsChart(latestTop10);
+            if (seenIPs.size > 500) seenIPs.clear();
+        }
+
+        // --- HELPER UI ---
+        function setHUDState(mode) {
+            const hudContainer = document.querySelector('.geo-grid'); // Container utama HUD
+            const ipVal = document.getElementById('ip-val');
+            const cityVal = document.getElementById('city-val');
+            const coordVal = document.getElementById('coord-val');
+
+            if (mode === 'AUTO') {
+                // --- UPDATE: HILANGKAN TOTAL ---
+                if (hudContainer) hudContainer.style.display = 'none';
+            } else {
+                // --- UPDATE: MUNCULKAN KEMBALI ---
+                if (hudContainer) hudContainer.style.display = 'grid';
+
+                // Reset Text ke default Manual
+                ipVal.innerText = "READY";
+                ipVal.style.color = "var(--cyan)";
+                cityVal.innerText = "---";
+                coordVal.innerText = "---";
+            }
+        }
+        async function inspectIp(targetIp) {
+            try {
+                // Beri efek loading di Intel Panel
+                document.getElementById('int-isp').innerText = "FETCHING...";
+                document.getElementById('int-type').innerHTML = "<span class='status-blink'>LOADING...</span>";
+
+                // Panggil API detail (sama seperti manual trace)
+                const url = `/api/geo-trace?ip=${targetIp}`;
+                const r = await fetch(url, { headers: { 'X-API-KEY': LOCAL_TOKEN } });
+                const d = await r.json();
+
+                if (d.status === 'success') {
+                    // Update Intel Dossier (Panel Kiri)
+                    updateIntelCard(d);
+
+                    updateUI(d); 
+                }
+            } catch (e) {
+                console.error("Failed to inspect IP", e);
+            }
+        }
+        function updateUI(d) {
+            document.getElementById('ip-val').innerText = d.query;
+            document.getElementById('city-val').innerText = (d.city || "") + ', ' + (d.countryCode || d.country || "");
+            document.getElementById('coord-val').innerText = d.lat + ', ' + d.lon;
+        }
+
+        function updateIntelCard(d) {
+            const cc = d.countryCode ? d.countryCode.toLowerCase() : "xx";
+            document.getElementById('flag-container').innerHTML = `<span class="fi fi-${cc}"></span>`;
+            typeText('int-isp', d.isp || "Unknown", 10, 0);
+            typeText('int-org', d.org || d.isp, 10, 100);
+            typeText('int-as', d.as || "N/A", 20, 200);
+            typeText('int-tz', d.timezone || "UTC", 20, 300);
+            typeText('int-reg', (d.regionName || "") + " " + (d.zip || ""), 20, 400);
+
+            const ispUpper = (d.isp + d.org || "").toUpperCase();
+            let typeLabel = "RESIDENTIAL";
+            let typeColor = "var(--green)";
+            if (ispUpper.includes("CLOUD") || ispUpper.includes("AWS")) { typeLabel = "DATA CENTER"; typeColor = "var(--red)"; }
+
+            const elType = document.getElementById('int-type');
+            elType.style.color = typeColor;
+            if (typeInstances['int-type']) typeInstances['int-type'].destroy();
+            typeInstances['int-type'] = new Typed('#int-type', {
+                strings: ['SCANNING...', `^500${typeLabel}`], typeSpeed: 30, backSpeed: 50, showCursor: true, cursorChar: '█',
+                onComplete: (self) => self.cursor.remove()
+            });
+        }
+
+        function typeText(elementId, text, speed = 20, delay = 0) {
+            const el = document.getElementById(elementId);
+            if (typeInstances[elementId]) typeInstances[elementId].destroy();
+            el.innerHTML = '';
+            typeInstances[elementId] = new Typed('#' + elementId, { strings: [text], typeSpeed: speed, startDelay: delay, showCursor: false });
+        }
+
+        // --- UPDATE: RENDER TABLE DENGAN LOGIKA WARNA BARU & FLAG ICON ---
+        function renderThreatTable(data) {
+            const tbody = document.getElementById('threat-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            data.forEach(t => {
+                const row = document.createElement('tr');
+                let cc = (t.countryCode || "xx").toLowerCase();
+
+                let hitsColor = 'var(--cyan)';
+                if (t.count > 500) hitsColor = 'var(--red)';
+                else if (t.count > 200) hitsColor = 'var(--yellow)';
+
+                row.innerHTML = `
+                    <td>${t.country || "UNK"}</td>
+                    <td style="color:#fff;">${t.ip}</td>
+                    <td style="text-align:center;"><span class="fi fi-${cc}" style="font-size:1.2em; border-radius:2px;"></span></td>
+                    <td style="color:${hitsColor}; font-weight:bold;">${t.count}</td>
+                `;
+                row.style.cursor = 'pointer';
+                row.onclick = () => {
+                    // 1. Zoom ke lokasi di Globe
+                    if (world) {
+                        world.pointOfView({ lat: t.lat, lng: t.lon, altitude: 1.5 }, 2000);
+                    }
+
+                    // 2. Mainkan Suara
+                    playLockSound();
+
+                    // 3. [BARU] Ambil detail Intel Dossier (ISP, ASN, dll)
+                    inspectIp(t.ip);
+                };
+                // -----------------------------
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateStatsChart(data) {
+            const countryCounts = {};
+            data.forEach(t => { const c = t.country || "UNK"; countryCounts[c] = (countryCounts[c] || 0) + t.count; });
+            const sorted = Object.entries(countryCounts).sort(([, a], [, b]) => b - a).slice(0, 5);
+            const statsList = document.getElementById('country-stats-list');
+            statsList.innerHTML = '';
+            const maxVal = sorted[0] ? sorted[0][1] : 1;
+            sorted.forEach(([country, count]) => {
+                const percent = (count / maxVal) * 100;
+                const cc = (country !== "UNK") ? country.toLowerCase() : "xx";
+                const barColor = percent > 80 ? 'var(--red)' : 'var(--cyan)';
+                const item = document.createElement('div');
+                item.style.marginBottom = "10px";
+                item.innerHTML = `<div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px; color:#ccc; font-family:'JetBrains Mono';"><span><span class="fi fi-${cc}"></span> ${country}</span><span style="color:${barColor}">${count}</span></div><div style="background:#111; height:6px; width:100%; border-radius:2px; overflow:hidden; border:1px solid #333;"><div style="width:${percent}%; background:${barColor}; height:100%; box-shadow:0 0 8px ${barColor}; transition: width 1s ease-out;"></div></div>`;
+                statsList.appendChild(item);
+            });
+        }
+
+        function showAttackToast(data, config) {
+            const container = document.getElementById('attack-notification-container');
+            const toast = document.createElement('div');
+            toast.className = 'attack-toast';
+            toast.style.borderLeftColor = config.color;
+            const cc = data.country ? data.country.toLowerCase() : "xx";
+            toast.innerHTML = `<div class="toast-header" style="color:${config.color}"><span>${config.icon} ${config.type}</span><span class="fi fi-${cc}"></span></div><div class="toast-row"><span class="toast-label">HOST:</span><span class="toast-val">${data.ip}</span></div>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        function getAttackConfig(t) {
+            let type = "SUSPICIOUS";
+            let color = "#00ffff";
+            let icon = "⚠";
+            // Logic ini opsional, karena warna utama sekarang dikontrol oleh t.count di loop utama
+            if (t.count > 500) { type = "DDoS ATTACK"; color = "var(--red)"; icon = "🔥"; }
+            else if (t.count > 200) { type = "BRUTEFORCE"; color = "var(--col-brute)"; icon = "🔓"; }
+            return { type, color, icon };
+        }
+    </script>
+</body>
+</html>

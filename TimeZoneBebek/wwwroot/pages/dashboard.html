@@ -1,0 +1,788 @@
+﻿<!DOCTYPE html>
+<html lang='id'>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Command Center</title>
+
+    <script src="js/auth-guard.js"></script>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://unpkg.com/typed.js@2.0.16/dist/typed.umd.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href='https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;500;700;900&display=swap' rel='stylesheet'>
+    <link rel="stylesheet" href="/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+
+    <style>
+
+        #app {
+            min-height: 100vh;
+            width: 100%;
+            box-sizing: border-box; /* Agar efek denyut shadow pas di pinggir layar */
+            /* Pendaran warna Cyan yang ujungnya tembus pandang */
+            background: radial-gradient(circle at 50% -10%, rgba(0, 255, 204, 0.08), transparent 70%);
+            transition: background 1s ease-in-out, box-shadow 1s ease-in-out;
+        }
+        /* --- GLOBAL BACKGROUND & SCANLINE --- */
+        body {
+            background-color: #030a05 !important;
+            background-image: linear-gradient(rgba(0, 255, 204, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 204, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+            /* Efek garis monitor CRT tipis */
+            body::before {
+                content: " ";
+                display: block;
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                right: 0;
+                background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+                background-size: 100% 4px;
+                z-index: 9999;
+                pointer-events: none;
+                opacity: 0.3;
+            }
+
+        /* Pastikan pembungkus transparan agar glow Vue tembus */
+        .content, .main-grid {
+            background: transparent !important;
+        }
+        /* --- GLOBAL THREAT THEME (DEFCON 1) --- */
+        .theme-critical {
+            --cyan: #ff3366 !important;
+            --green: #ff3366 !important;
+            --yellow: #ff9900 !important;
+            /* Pendaran berubah Merah Darah saat diserang */
+            background: radial-gradient(circle at 50% -10%, rgba(255, 51, 102, 0.25), transparent 70%) !important;
+            animation: globalAlarm 2s infinite;
+        }
+
+        @keyframes globalAlarm {
+            0%, 100% {
+                box-shadow: inset 0 0 0px rgba(255,51,102,0);
+            }
+
+            50% {
+                box-shadow: inset 0 0 80px rgba(255,51,102,0.4);
+            }
+        }
+
+        /* --- ANIMASI LIST FEED --- */
+        .feed-list-enter-active, .feed-list-leave-active {
+            transition: all 0.6s ease;
+        }
+
+        .feed-list-enter-from {
+            opacity: 0;
+            transform: translateX(-50px);
+            background-color: rgba(255, 51, 102, 0.3);
+        }
+
+        .feed-list-leave-to {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .clickable-row {
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+            .clickable-row:hover {
+                background: rgba(0, 255, 204, 0.1);
+            }
+
+        /* --- SKELETON LOADING --- */
+        .skeleton-pulse {
+            background: linear-gradient(90deg, rgba(0,255,204,0.05) 25%, rgba(0,255,204,0.15) 50%, rgba(0,255,204,0.05) 75%);
+            background-size: 200% 100%;
+            animation: skeletonLoad 1.5s infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes skeletonLoad {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        /* --- INCIDENT MODAL --- */
+        .drilldown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .drilldown-box {
+            background: rgba(5, 10, 15, 0.95);
+            border: 1px solid var(--cyan);
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .drilldown-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--cyan);
+            padding-bottom: 10px;
+            font-family: 'Orbitron';
+            font-size: 1.2rem;
+            color: var(--cyan);
+        }
+
+        .drilldown-row {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            border-bottom: 1px dashed #333;
+            padding-bottom: 8px;
+            font-family: 'JetBrains Mono';
+            font-size: 0.85rem;
+        }
+
+        .drilldown-label {
+            color: #888;
+        }
+
+        .drilldown-val {
+            color: #fff;
+            word-break: break-all;
+        }
+
+        .cyber-btn {
+            background: rgba(0, 255, 204, 0.1);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 8px 15px;
+            font-family: 'Orbitron';
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+            .cyber-btn:hover {
+                background: var(--cyan);
+                color: #000;
+                box-shadow: 0 0 15px var(--cyan);
+            }
+
+            .cyber-btn.btn-red {
+                border-color: var(--red);
+                color: var(--red);
+                background: rgba(255, 51, 102, 0.1);
+            }
+
+                .cyber-btn.btn-red:hover {
+                    background: var(--red);
+                    color: #fff;
+                    box-shadow: 0 0 15px var(--red);
+                }
+    </style>
+</head>
+<body class="loaded">
+
+    {{PRELOADER}}
+    <div id="dash-video-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:10000; display:flex; justify-content:center; align-items:center;">
+        <video id="intro-video" autoplay muted playsinline width="720" height="1280" style="width:720px; height:1280px; max-width:100%; max-height:100%; object-fit:contain;">
+            <source src="/assets/videos/intro.webm" type="video/webm">
+            <source src="/assets/videos/intro.mp4" type="video/mp4">
+        </video>
+        <button onclick="dismissVideo()" style="position:absolute; bottom:30px; right:30px; background:rgba(0,0,0,0.6); border:1px solid var(--cyan); color:var(--cyan); padding:8px 15px; font-family:'Orbitron'; cursor:pointer; letter-spacing:2px; font-size:0.8rem; transition:0.3s;">
+            SKIP >>
+        </button>
+    </div>
+    <script>
+        function dismissVideo() {
+            const el = document.getElementById('dash-video-overlay');
+            if (el) { el.style.transition = "opacity 0.8s ease-out"; el.style.opacity = "0"; setTimeout(() => el.remove(), 800); }
+        }
+        document.addEventListener("DOMContentLoaded", () => {
+            const v = document.getElementById('intro-video');
+            if (v) { v.onended = dismissVideo; setTimeout(dismissVideo, 10000); }
+        });
+    </script>
+    <div class='scanlines'></div>
+    <div class='cyber-grid'></div>
+    {{SIDEBAR}}
+
+<div id="app" class="content" :class="{ 'theme-critical': soc.defconLevel === 'DEFCON 1' || isRealTraffic }" @click="initAudioContext">
+
+    <div class='brand-header'>
+        <div class="title-switcher-container">
+            <h1 class="brand-title glitch switching-title" :class="{ active: !showBebek }">BAPPENAS CSIRT</h1>
+            <h1 class="brand-title glitch switching-title" :class="{ active: showBebek }" style="color:var(--cyan)">BEBEK PINTAR</h1>
+        </div>
+        <div class='brand-subtitle'><span id='typed-output'></span></div>
+    </div>
+
+    <div class='time-section' style="display:flex; justify-content:center;">
+        <div class="clock-stack" style="width:100%; max-width:500px;">
+            <div class="env-panel" style="width:100%; margin-bottom:0;">
+                <div class="env-weather-box">
+                    <div class="w-icon-sm" v-html="weather.icon"></div>
+                    <div class="env-temp">{{ weather.temp }}</div>
+                </div>
+                <div class="env-info-box">
+                    <div class="env-date-row">
+                        <span class="env-day">{{ date.dayName }}</span><span style="color:#444;">//</span>
+                        <span class="env-date">{{ date.fullDate }}</span>
+                        <span style="color:var(--cyan); font-size:0.75rem; margin-left:10px; opacity:0.8; font-family:'Orbitron';">[ {{ date.hijri }} ]</span>
+                    </div>
+                    <div class="env-location"><span>📍</span><span class="glitch">{{ locationName }}</span></div>
+                    <div :class="['w-desc', { 'status-blink': weather.isBad }]" style="font-size:0.7rem; color:#666; margin-top:5px; letter-spacing:1px;">{{ weather.desc }}</div>
+                </div>
+            </div>
+
+            <div class="analog-container" style="margin:0; width:220px; height:220px;">
+                <div class="analog-ring-outer"></div>
+                <div class="analog-face"><div class="analog-ticks"></div><div class="analog-num n12">12</div><div class="analog-num n3">3</div><div class="analog-num n6">6</div><div class="analog-num n9">9</div></div>
+                <div class="hand-container"><div class="hand hand-hour" :style="{ transform: `rotate(${clockHands.h}deg)` }"></div><div class="hand hand-min" :style="{ transform: `rotate(${clockHands.m}deg)` }"></div><div class="hand hand-sec" :style="{ transform: `rotate(${clockHands.s}deg)` }"></div><div class="center-hub"></div></div>
+            </div>
+
+            <div class="digital-panel" style="width:100%; padding:10px;">
+                <div class='main-clock-box' style="margin-bottom:5px; padding-bottom:5px;">
+                    <span class='label'>WIB (UTC+7)</span>
+                    <div class='clock-xl' style="font-size:2.5rem;" :style="clocks.wibStyle">{{ clocks.wib }}</div>
+                </div>
+                <div class='sub-clock-grid'>
+                    <div class='sub-clock'><div class='label-sm'>WITA</div><div class='clock-sm' style="font-size:0.9rem;">{{ clocks.wita }}</div></div>
+                    <div class='sub-clock'><div class='label-sm'>WIT</div><div class='clock-sm' style="font-size:0.9rem;">{{ clocks.wit }}</div></div>
+                    <div class='sub-clock'><div class='label-sm'>UTC</div><div class='clock-sm' style="font-size:0.9rem;">{{ clocks.utc }}</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class='grid'>
+        <div class='card alert' :style="{ borderColor: soc.defconColor, boxShadow: soc.defconShadow }" style="text-align:center;">
+            <span class='label'>THREAT LEVEL</span>
+            <div v-if="isLoadingData" class="skeleton-pulse" style="height:40px; width:150px; margin: 10px auto;"></div>
+            <div v-else class='value' :class="{ 'glitch': soc.defconLevel === 'DEFCON 1' }" :style="{ color: soc.defconColor, fontSize: '2rem' }">{{ soc.defconLevel }}</div>
+            <div style="font-size:0.7rem; color:#666;">{{ soc.defconDesc }}</div>
+        </div>
+
+        <div class='card hud-card'>
+            <span class='label'>OPEN TICKETS</span>
+            <div style="display:flex; align-items:flex-end; justify-content:space-between;">
+                <div v-if="isLoadingData" class="skeleton-pulse" style="height:50px; width:80px;"></div>
+                <div v-else class='value' style="font-size:2.5rem; color:var(--yellow);">{{ Math.round(odometerTickets) }}</div>
+                <div style="font-size:0.7rem; color:#888; margin-bottom:10px;">ACTIONABLE</div>
+            </div>
+            <div ref="chartRef" style="position:absolute; bottom:0; left:0; right:0;"></div>
+        </div>
+
+        <div class='card'>
+            <span class='label'>TOP THREAT ACTOR</span>
+            <div v-if="isLoadingData" class="skeleton-pulse" style="height:25px; width:100%; margin-bottom:15px;"></div>
+            <div v-else>
+                <div class='value' style="font-size:1.2rem;">{{ soc.topAttacker }}</div>
+                <div class='prog-container' style="margin-top:10px;">
+                    <div class='prog-fill' :style="{ width: soc.topAttackerPct + '%', background: 'var(--red)' }"></div>
+                </div>
+            </div>
+            <div style="font-size:0.7rem; color:#666; margin-top:5px; text-align:right;">TODAY'S MOST ACTIVE</div>
+        </div>
+
+        <div class='card'><span class='label'>SHIFT DURATION</span><div class='value' :style="{ color: shift.isOffDuty ? '#666' : 'var(--cyan)' }">{{ shift.timerText }}</div><div style="font-size:0.7rem; color:#666;">SINCE 08:00 WIB</div></div>
+
+        <div class='card hud-card' style="border-color:var(--green);">
+            <span class='label' style="color:var(--green);">NEXT PRAYER</span>
+            <div class='value'>{{ nextPrayer.name }}</div>
+            <div style="font-size:0.9rem;" :style="{ color: nextPrayer.isNear ? 'var(--red)' : '#fff' }" :class="{ 'status-blink': nextPrayer.isNear }">
+                {{ nextPrayer.time }} <span style="color:#888; font-size:0.7rem; margin-left:5px;">({{ nextPrayer.countdown }})</span>
+            </div>
+        </div>
+
+        <div class='card hud-card' :style="{ borderColor: isRealTraffic ? 'var(--red)' : 'var(--cyan)' }" style="display:flex; flex-direction:column; justify-content:space-between; transition: border-color 0.3s;">
+            <div style="display:flex; justify-content:space-between; width:100%;">
+                <span class='label' :style="{ color: isRealTraffic ? 'var(--red)' : 'var(--cyan)' }">SIEM INGESTION</span>
+
+                <div class="status-blink" :style="{ color: isRealTraffic ? 'var(--red)' : 'var(--green)' }" style="font-size:0.6rem; margin-top: 2px; font-weight: bold;">
+                    ● {{ isRealTraffic ? 'LIVE INGEST' : 'IDLE NOISE' }}
+                </div>
+            </div>
+
+            <div style="display:flex; align-items:flex-end; margin-top: 5px;">
+                <div class='value' :style="{ color: isRealTraffic ? 'var(--red)' : '#fff' }" style="font-size:1.8rem; transition: color 0.3s;">
+                    {{ currentEps }}
+                </div>
+                <div style="font-size: 0.8rem; color: var(--cyan); margin-bottom: 5px; margin-left: 5px; font-family: 'Orbitron';">EPS</div>
+            </div>
+            <div ref="epsChartRef" style="margin-top: auto; margin-left: -10px; margin-right: -10px; margin-bottom: -10px;"></div>
+        </div>
+
+        <div class='card hud-card' style="grid-column: 1 / -1; background: rgba(0, 15, 10, 0.9); border: 1px solid var(--green); box-shadow: inset 0 0 20px rgba(0,255,0,0.05);">
+            <span class='label' style="color:var(--green)">
+                SYSTEM TERMINAL LOG
+                <span class="status-blink" :style="{ color: isTerminalLive ? 'var(--red)' : 'var(--yellow)', marginLeft: '10px' }">
+                    ● {{ isTerminalLive ? 'LIVE' : 'CONNECTING...' }}
+                </span>
+            </span>
+
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #00ff33; height: 120px; overflow: hidden; display: flex; flex-direction: column-reverse; margin-top: 10px;">
+                <div v-for="(log, index) in sysLogs" :key="index" style="margin-bottom: 4px; border-bottom: 1px dashed rgba(0,255,51,0.2); padding-bottom: 2px;">
+                    <span style="opacity:0.7">root@csirt:~#</span> <span v-html="log"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="incident-feed-box" style="margin-top: 20px;">
+        <div class="feed-header">
+            <span>>> LIVE INCIDENT STREAM</span>
+            <span class="status-blink" style="color:var(--red);">● LIVE</span>
+        </div>
+        <table class="feed-table">
+            <thead><tr><th width="15%">TIME</th><th width="10%">SEV</th><th>TITLE / VECTOR</th><th width="20%">ACTOR</th></tr></thead>
+            <transition-group name="feed-list" tag="tbody">
+                <tr v-if="isLoadingData && soc.recentIncidents.length === 0" key="loading-row">
+                    <td colspan="4" style="text-align:center; padding: 20px;">
+                        <div class="skeleton-pulse" style="height:20px; width:50%; margin:auto;"></div>
+                    </td>
+                </tr>
+                <tr v-else-if="soc.recentIncidents.length === 0" key="empty-row">
+                    <td colspan="4" style="text-align:center; color:#666;">AWAITING THREAT DATA...</td>
+                </tr>
+                <tr v-for="inc in soc.recentIncidents" :key="inc.id" class="clickable-row" @click="openIncidentDetail(inc)" title="Click to view details">
+                    <td style="color:#666;">{{ formatTime(inc.date) }}</td>
+                    <td :class="getSevClass(inc.severity)">{{ inc.severity.substring(0,3) }}</td>
+                    <td>{{ escapeHtml(inc.title) }}</td>
+                    <td style="color:#fff;">{{ escapeHtml(inc.attacker) }}</td>
+                </tr>
+            </transition-group>
+        </table>
+    </div>
+
+    <div class='ticker-wrap'><div class='ticker-label'>THREAT INTEL</div><div class='ticker'><div class='ticker-item' v-if="newsFeed.length === 0">Loading Intelligence Feed...</div><div class='ticker-item' v-for="(news, index) in newsFeed" :key="index"><span style='color:var(--yellow); animation:pulse 1s infinite;'>[NEWS]</span> <a :href="news.link" target='_blank'>{{ news.title }}</a></div></div></div>
+    <div class='fullscreen-btn' @click="toggleFullScreen" title='War Room Mode'>⛶</div>
+
+    <div class="shift-modal" :style="{ display: modal.show ? 'flex' : 'none' }">
+        <div class="shift-box" :style="{ borderColor: modal.color, boxShadow: modal.shadow }">
+            <div class="shift-title" :style="{ color: modal.color }">{{ modal.title }}</div>
+            <div class="shift-msg" v-if="modal.type !== 'PRAYER'" v-html="modal.msg"></div>
+            <div class="shift-msg" v-else>
+                TIME FOR {{ modal.prayerName }}.<br>
+                <div style="margin-top:20px; padding:20px; border:2px solid var(--green); background:rgba(0,255,153,0.1); border-radius:8px; box-shadow: 0 0 15px rgba(0,255,153,0.1);">
+                    <div style="font-size:0.8rem; color:#aaa; margin-bottom:5px; letter-spacing:2px;">IMAM ON DUTY</div>
+                    <b style="font-size:2.5rem; display:inline-block; min-width:200px; font-family:'Orbitron'; text-shadow:0 0 10px var(--green);" :style="{ color: modal.imamColor }">{{ modal.imamText }}</b>
+                </div>
+            </div>
+            <button class="shift-btn" @click="closeModal">ROGER THAT</button>
+            <div class="shift-timer-bar"><div id="shift-progress" class="shift-timer-fill" :style="{ backgroundColor: modal.color, transition: modal.transition, width: modal.progressWidth }"></div></div>
+        </div>
+    </div>
+
+    <div class="drilldown-overlay" v-if="incidentModal.show" @click.self="closeIncidentDetail">
+        <div class="drilldown-box">
+            <div class="drilldown-header">
+                <span><i class="fas fa-crosshairs"></i> THREAT DOSSIER</span>
+                <button @click="closeIncidentDetail" style="background:none; border:none; color:var(--red); font-size:1.5rem; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="flex:1; overflow-y:auto; padding-right:10px;">
+                <div class="drilldown-row"><span class="drilldown-label">ID</span><span class="drilldown-val" style="color:var(--yellow)">{{ incidentModal.data.id }}</span></div>
+                <div class="drilldown-row"><span class="drilldown-label">TIMESTAMP</span><span class="drilldown-val">{{ formatTime(incidentModal.data.date) }}</span></div>
+                <div class="drilldown-row"><span class="drilldown-label">SEVERITY</span><span class="drilldown-val" :class="getSevClass(incidentModal.data.severity)">{{ incidentModal.data.severity }}</span></div>
+                <div class="drilldown-row"><span class="drilldown-label">ATTACKER IP</span><span class="drilldown-val" style="font-family:monospace; color:var(--cyan)">{{ incidentModal.data.attacker }}</span></div>
+                <div class="drilldown-row"><span class="drilldown-label">VECTOR</span><span class="drilldown-val">{{ incidentModal.data.title }}</span></div>
+
+                <div style="background: rgba(0,0,0,0.5); padding:10px; border: 1px dashed #444; margin-top: 15px; font-family:'JetBrains Mono'; font-size:0.75rem; color:#aaa;">
+                    <b>[PAYLOAD SUMMARY]</b><br>
+                    {{ incidentModal.data.summary || 'No payload signature provided.' }}
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top: 10px;">
+                <button class="cyber-btn" style="flex:1;" @click="closeIncidentDetail">ACKNOWLEDGE</button>
+                <button class="cyber-btn btn-red" style="flex:1;" @click="isolateAttacker(incidentModal.data.attacker)"><i class="fas fa-shield-alt"></i> ISOLATE IP</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="prayer-dock">
+        <div class="dock-tab"><span style="font-size:1.2rem;">🕌</span><span class="dock-vertical-text">PRAYER INTEL</span></div>
+        <div class="dock-content">
+            <div class="dock-header">TODAY'S SCHEDULE</div>
+            <div id="prayer-list-container">
+                <div v-if="Object.keys(prayerTimes).length === 0" style="text-align:center; color:#666;">LOADING...</div>
+                <div v-for="(time, name) in prayerTimes" :key="name" class="prayer-item" :class="{ active: name.toLowerCase() === nextPrayer.name.toLowerCase() }">
+                    <span class="prayer-name">{{ name }}</span>
+                    <span class="prayer-time">{{ time }} WIB</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+    <script>
+        const {createApp, ref, reactive, onMounted, onUnmounted, watch } = Vue;
+
+        createApp({
+            setup() {
+                const CONFIG = { DEF_LAT: -6.212530770381996, DEF_LON: 106.83045523468515, START: 8, END: 16 };
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+                const isLoadingData = ref(true);
+                const odometerTickets = ref(0);
+                const incidentModal = reactive({ show: false, data: null });
+                const isTerminalLive = ref(false);
+
+                const showBebek = ref(false);
+                const locationName = ref("LOCATING...");
+                const weather = reactive({ temp: '--°', desc: 'WAITING...', icon: '<div class="cloud"></div>', isBad: false });
+
+                const clockHands = reactive({ h: 0, m: 0, s: 0 });
+                const clocks = reactive({ wib: '00:00:00', wita: '00:00', wit: '00:00', utc: '00:00', wibStyle: {} });
+                const date = reactive({ dayName: '---', fullDate: 'Loading...', hijri: '' });
+                const shift = reactive({ timerText: '00:00:00', isOffDuty: false });
+
+                const soc = reactive({ openTickets: 0, defconLevel: 'DEFCON 5', defconDesc: 'NORMAL OPERATIONS', defconColor: 'var(--green)', defconShadow: 'none', topAttacker: '---', topAttackerPct: 0, recentIncidents: [] });
+                const chartRef = ref(null);
+                let chartInstance = null;
+
+                const prayerTimes = ref({});
+                const imamPool = ref([]);
+                const nextPrayer = reactive({ name: '---', time: '--:--', countdown: '', isNear: false });
+
+                const modal = reactive({ show: false, type: '', title: '', msg: '', color: 'var(--yellow)', shadow: 'none', progressWidth: '100%', transition: 'none', prayerName: '', imamText: '...', imamColor: '#aaa' });
+                let modalTimer = null;
+                const flags = { shiftAlerted: false, prayerAlerted: false };
+
+                const newsFeed = ref([]);
+                const sysLogs = ref([]);
+
+                const epsChartRef = ref(null);
+                let epsChartInstance = null;
+                const currentEps = ref("0");
+                const epsDataSeries = ref(Array(15).fill(0));
+                const isRealTraffic = ref(true);
+
+
+
+                // --- 1. ODOMETER ---
+                watch(() => soc.openTickets, (newVal) => {
+                    let start = odometerTickets.value;
+                    const duration = 1000;
+                    const startTime = performance.now();
+                    const animateCount = (time) => {
+                        const progress = Math.min((time - startTime) / duration, 1);
+                        odometerTickets.value = start + (newVal - start) * progress;
+                        if (progress < 1) requestAnimationFrame(animateCount);
+                    };
+                    requestAnimationFrame(animateCount);
+                });
+
+                // --- 2. SIGNALR TERMINAL ENGINE ---
+                let terminalConnection = null;
+
+                const initSignalRTerminal = async () => {
+                    terminalConnection = new signalR.HubConnectionBuilder()
+                        .withUrl("/threatHub")
+                        .withAutomaticReconnect()
+                        .build();
+
+                    const addLog = (msg) => {
+                        const t = new Date();
+                        const timeStr = `${t.toLocaleTimeString('id-ID')}::${String(t.getMilliseconds()).padStart(3, '0')}`;
+                        sysLogs.value.unshift(`[${timeStr}] ${msg}`);
+                        // Naikkan batas baris menjadi 25 agar terminal terlihat lebih penuh
+                        if (sysLogs.value.length > 25) sysLogs.value.pop();
+                    };
+
+                    addLog("<span style='color:var(--yellow)'>[SYS] INITIALIZING ELASTIC STREAM...</span>");
+
+                    // --- FITUR: SABUK PENGAMAN DEDUPLIKASI ---
+                    const processedLogs = new Set();
+
+                    // Dengarkan data serangan real-time
+                    terminalConnection.on("ReceiveThreats", (data) => {
+                        data.forEach(t => {
+                            // 1. Buat "Sidik Jari" unik berdasarkan IP dan Hit Count
+                            const logSignature = `${t.ip}_${t.count}`;
+
+                            // 2. Cek apakah ini serangan yang baru (hitungan bertambah / IP baru)
+                            if (!processedLogs.has(logSignature)) {
+
+                                // Simpan ke ingatan
+                                processedLogs.add(logSignature);
+
+                                // Cegah memori bocor (ingat 100 log terakhir saja)
+                                if (processedLogs.size > 100) {
+                                    const firstItem = processedLogs.values().next().value;
+                                    processedLogs.delete(firstItem);
+                                }
+
+                                const ip = t.ip || "UNKNOWN_IP";
+                                const country = t.country || "UNK";
+                                let type = t.type;
+                                if (!type) {
+                                    if (t.count > 500) type = "DDOS";
+                                    else if (t.count > 200) type = "BRUTEFORCE";
+                                    else type = "SUSPICIOUS";
+                                }
+
+                                const color = t.count > 200 ? "var(--red)" : "var(--yellow)";
+                                addLog(`<span style='color:#fff'>INBOUND FROM ${ip} (${country})</span> ..... <span style='color:${color}'>${type} DETECTED</span>`);
+                            }
+                        });
+                    });
+
+                    // --- MANAJEMEN STATUS LIVE / CONNECTING ---
+                    terminalConnection.onreconnecting(() => {
+                        isTerminalLive.value = false; // Matikan indikator LIVE saat putus
+                        addLog("<span style='color:var(--yellow)'>[SYS] CONNECTION LOST. RECONNECTING...</span>");
+                    });
+
+                    terminalConnection.onreconnected(() => {
+                        isTerminalLive.value = true; // Nyalakan indikator LIVE saat nyambung lagi
+                        addLog("<span style='color:var(--green)'>[SYS] SOCKET RECONNECTED.</span>");
+                    });
+
+                    try {
+                        await terminalConnection.start();
+                        isTerminalLive.value = true; // Nyalakan indikator LIVE saat koneksi awal berhasil
+                        addLog("<span style='color:var(--green)'>[SYS] REAL-TIME THREAT STREAM ACTIVE.</span>");
+                    } catch (e) {
+                        isTerminalLive.value = false; // Pastikan mati jika koneksi gagal
+                        addLog("<span style='color:var(--red)'>[SYS] CONNECTION FAILED. RETRYING...</span>");
+                    }
+                };
+
+                // --- 3. MODALS & AUDIO ---
+                const openIncidentDetail = (inc) => { incidentModal.data = inc; incidentModal.show = true; };
+                const closeIncidentDetail = () => { incidentModal.show = false; incidentModal.data = null; };
+                const isolateAttacker = (ip) => {
+                    closeIncidentDetail();
+                    Toastify({ text: `INITIATING FIREWALL BLOCK FOR ${ip}...`, duration: 2000, style: { background: "linear-gradient(to right, #ff5f6d, #ffc371)", color: "#000", fontFamily: "Orbitron" } }).showToast();
+                    setTimeout(() => { Toastify({ text: `IP ${ip} SUCCESSFULLY ISOLATED`, duration: 3000, style: { background: "#111", border: "1px solid var(--cyan)", color: "var(--cyan)", fontFamily: "Orbitron" } }).showToast(); }, 2000);
+                };
+
+                const initAudioContext = () => { if (audioCtx.state === 'suspended') audioCtx.resume(); };
+                const playTone = (f, s, d, t = 'sine', v = 0.1) => { const n = audioCtx.currentTime; const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type = t; o.frequency.setValueAtTime(f, n + s); g.gain.setValueAtTime(0, n + s); g.gain.linearRampToValueAtTime(v, n + s + 0.05); g.gain.exponentialRampToValueAtTime(0.001, n + s + d); o.connect(g); g.connect(audioCtx.destination); o.start(n + s); o.stop(n + s + d); };
+                const playAlertSound = (t) => { initAudioContext(); if (t === 'START') { [261.6, 329.6, 392, 493.8].forEach((f, i) => playTone(f, i * 0.1, 0.2, 'triangle')); playTone(523.2, 0.4, 0.8, 'square', 0.05); } else if (t === 'END') { [880, 659.2, 523.2].forEach((f, i) => playTone(f, i * 0.3, 0.6)); playTone(392, 0.9, 1.5); } else if (t === 'PRAYER') { playTone(659.25, 0, 1.5, 'sine', 0.1); playTone(523.25, 0.6, 2.0, 'sine', 0.1); const s = 2.5;[164.81, 329.63, 349.23, 415.30, 329.63].forEach((f, i) => playTone(f, s + (i < 2 ? 0 : i < 3 ? 4 : i < 4 ? 5.5 : 8.5), i < 2 ? 4 : i < 3 ? 1.5 : i < 4 ? 3 : 5, 'triangle', 0.15)); } };
+
+                // --- 4. CLOCK ENGINE ---
+                const fW = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); const fWa = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); const fWt = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jayapura', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); const fU = new Intl.DateTimeFormat('id-ID', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); const fH = new Intl.DateTimeFormat('id-ID-u-ca-islamic', { day: 'numeric', month: 'long', year: 'numeric' });
+                let lastSec = -1;
+
+                const clockLoop = () => {
+                    const now = new Date(); const ms = now.getMilliseconds(); const s = now.getSeconds(); const m = now.getMinutes(); const h = now.getHours();
+                    clockHands.s = (s + (ms / 1000)) * 6; clockHands.m = (m * 6) + (s * 0.1); clockHands.h = ((h % 12) * 30) + (m * 0.5);
+                    if (s !== lastSec) {
+                        lastSec = s; clocks.wib = fW.format(now).replace(/\./g, ':'); clocks.wita = fWa.format(now).replace(/\./g, ':'); clocks.wit = fWt.format(now).replace(/\./g, ':'); clocks.utc = fU.format(now).replace(/\./g, ':');
+                        const isW = h >= CONFIG.START && h < CONFIG.END; clocks.wibStyle = { color: isW ? 'var(--cyan)' : 'var(--red)', textShadow: isW ? '0 0 20px rgba(0, 255, 204, 0.2)' : '0 0 20px rgba(255, 51, 102, 0.4)' };
+                        const dy = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU']; const mt = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES'];
+                        date.dayName = dy[now.getDay()]; date.fullDate = `${String(now.getDate()).padStart(2, '0')} ${mt[now.getMonth()]} ${now.getFullYear()}`; date.hijri = fH.format(now);
+                        if (h === CONFIG.START && m === 0 && s < 2 && !flags.shiftAlerted) { triggerModal('START'); flags.shiftAlerted = true; } else if (h === CONFIG.END && m === 0 && s < 2 && !flags.shiftAlerted) { triggerModal('END'); flags.shiftAlerted = true; } else if (s > 5) flags.shiftAlerted = false;
+                        const sS = new Date(); sS.setHours(CONFIG.START, 0, 0, 0); const d = now - sS;
+                        if (d < 0) { shift.isOffDuty = true; shift.timerText = "OFF DUTY"; } else { shift.isOffDuty = false; shift.timerText = `${String(Math.floor(d / 36e5)).padStart(2, '0')}:${String(Math.floor((d % 36e5) / 6e4)).padStart(2, '0')}:${String(Math.floor((d % 6e4) / 1e3)).padStart(2, '0')}`; }
+                        updatePrayerData(now, h, m, s);
+                    }
+                    requestAnimationFrame(clockLoop);
+                };
+
+                const updatePrayerData = (n, h, m, s) => {
+                    const cT = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; const cM = (h * 60) + m; let fN = null; let mD = Infinity;
+                    Object.entries(prayerTimes.value).forEach(([pn, pt]) => {
+                        if (pt === cT && s < 2 && !flags.prayerAlerted) { const im = imamPool.value.length ? imamPool.value[Math.floor(Math.random() * imamPool.value.length)] : "TBA"; triggerModal('PRAYER', { name: pn, imam: im }); flags.prayerAlerted = true; }
+                        const [ph, pm] = pt.split(':').map(Number); const pms = (ph * 60) + pm;
+                        if (pms > cM && (pms - cM) < mD) { mD = pms - cM; fN = { pn, pt }; }
+                    });
+                    if (s > 5) flags.prayerAlerted = false;
+                    if (fN) { nextPrayer.name = fN.pn.toUpperCase(); nextPrayer.time = fN.pt; const hl = Math.floor(mD / 60), ml = mD % 60; nextPrayer.countdown = `-${String(hl).padStart(2, '0')}:${String(ml).padStart(2, '0')}`; nextPrayer.isNear = (hl === 0 && ml < 10); }
+                    else { nextPrayer.name = "FAJR"; nextPrayer.time = prayerTimes.value['Fajr'] || "--:--"; nextPrayer.countdown = ""; nextPrayer.isNear = false; }
+                };
+
+                // --- 5. DATA FETCHERS ---
+                const fetchGeoData = async () => {
+                    fetch('/api/imam-list', { headers: { 'X-API-KEY': API_KEY } }).then(r => r.json()).then(d => imamPool.value = d).catch(e => { });
+                    if (navigator.geolocation) { navigator.geolocation.getCurrentPosition((pos) => { getApis(pos.coords.latitude, pos.coords.longitude); }, () => { getApis(CONFIG.DEF_LAT, CONFIG.DEF_LON); }); }
+                    else getApis(CONFIG.DEF_LAT, CONFIG.DEF_LON);
+                };
+
+                const getApis = async (lat, lon) => {
+                    const d = new Date();
+                    fetch(`https://api.aladhan.com/v1/timings/${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}?latitude=${lat}&longitude=${lon}&method=20`)
+                        .then(r => r.json())
+                        .then(res => {
+                            if (res.data && res.data.timings) {
+                                const t = res.data.timings;
+                                prayerTimes.value = { Fajr: t.Fajr, Dhuhr: t.Dhuhr, Asr: t.Asr, Maghrib: t.Maghrib, Isha: t.Isha };
+                            }
+                        }).catch(e => console.warn("API Sholat offline"));
+
+                    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`)
+                        .then(r => r.json())
+                        .then(res => {
+                            if (res.current_weather) {
+                                const w = res.current_weather; weather.temp = `${Math.round(w.temperature)}°`;
+                                const cd = { 0: { t: "CLEAR SKY", i: `<div class="sun"></div>` }, 1: { t: "CLOUDY", i: `<div class="cloud"></div>` }, 51: { t: "RAIN", i: `<div class="rain-cloud"></div><div class="rain-drop"></div>` } };
+                                const mp = cd[w.weathercode === 0 ? 0 : (w.weathercode <= 3 ? 1 : 51)];
+                                weather.desc = mp.t; weather.icon = mp.i; weather.isBad = (w.weathercode >= 51);
+                            }
+                        }).catch(e => weather.desc = "OFFLINE");
+
+                    fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=id`)
+                        .then(r => r.json())
+                        .then(res => {
+                            locationName.value = (res.locality && res.city ? `${res.locality}, ${res.city}` : res.city || "UNKNOWN").toUpperCase();
+                        }).catch(e => locationName.value = "OFFLINE");
+                };
+
+                const fetchSocData = async () => {
+                    try {
+                        const res = await fetch('/api/incidents', { headers: { 'X-API-KEY': API_KEY } });
+                        if (!res.ok) throw new Error();
+                        const data = await res.json();
+                        const active = data.filter(i => !i.status || i.status.toUpperCase() !== 'RESOLVED');
+
+                        soc.openTickets = active.length;
+                        soc.recentIncidents = data.slice(0, 5);
+
+                        const crit = active.filter(i => i.severity === 'CRITICAL').length;
+                        const high = active.filter(i => i.severity === 'HIGH').length;
+                        if (crit > 0) { soc.defconLevel = 'DEFCON 1'; soc.defconColor = 'var(--red)'; soc.defconShadow = '0 0 15px rgba(255,0,0,0.3)'; soc.defconDesc = 'CRITICAL THREAT ACTIVE'; }
+                        else if (high > 2) { soc.defconLevel = 'DEFCON 3'; soc.defconColor = '#e67e22'; soc.defconShadow = 'none'; soc.defconDesc = 'ELEVATED RISK'; }
+                        else { soc.defconLevel = 'DEFCON 5'; soc.defconColor = 'var(--green)'; soc.defconShadow = 'none'; soc.defconDesc = 'NORMAL OPERATIONS'; }
+
+                        if (data.length > 0) {
+                            const counts = {}; data.forEach(x => counts[x.attacker] = (counts[x.attacker] || 0) + 1);
+                            soc.topAttacker = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+                            soc.topAttackerPct = Math.min((counts[soc.topAttacker] / data.length) * 100, 100);
+                            const hoursMap = new Array(12).fill(0); const now = new Date();
+                            data.forEach(inc => { const hDiff = (now - new Date(inc.date)) / 36e5; if (hDiff <= 12) hoursMap[Math.floor(hDiff)]++; });
+                            chartInstance?.updateSeries([{ data: hoursMap.reverse() }]);
+                        }
+                    } catch (e) { }
+                    finally { isLoadingData.value = false; }
+                };
+
+                const fetchNews = () => { fetch('/api/news', { headers: { 'X-API-KEY': API_KEY } }).then(r => r.json()).then(d => { if (d.length) newsFeed.value = d; }); };
+                const escapeHtml = (text) => { if (!text) return ""; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); };
+                const formatTime = (d) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                const getSevClass = (s) => s === 'CRITICAL' ? 'sev-crt' : (s === 'HIGH' ? 'sev-hgh' : (s === 'MEDIUM' ? 'sev-med' : 'sev-low'));
+                const toggleFullScreen = () => !document.fullscreenElement ? document.documentElement.requestFullscreen() : document.exitFullscreen();
+                const animateJackpot = (fV) => { const p = imamPool.value.length > 0 ? imamPool.value : ["SEARCHING..."]; let c = 0; const ts = 90; const id = setInterval(() => { modal.imamText = p[Math.floor(Math.random() * p.length)]; modal.imamColor = (c % 2 === 0) ? "#fff" : "#aaa"; c++; if (c >= ts) { clearInterval(id); modal.imamText = fV; modal.imamColor = "var(--green)"; if (typeof confetti === 'function') { confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00ff99', '#00ffff', '#ffffff'], zIndex: 10001 }); } } }, 30); };
+                const triggerModal = (type, data = null) => { modal.show = true; modal.type = type; modal.progressWidth = '100%'; modal.transition = 'none'; if (modalTimer) clearTimeout(modalTimer); setTimeout(() => { modal.progressWidth = '0%'; modal.transition = 'width 60s linear'; }, 100); if (type === 'START') { modal.title = "🚀 SYSTEM INITIALIZED"; modal.color = "var(--cyan)"; modal.shadow = "0 0 50px rgba(0,255,204,0.3)"; modal.msg = "DUTY CYCLE STARTED.<br>ALL SYSTEMS GREEN."; } else if (type === 'END') { modal.title = "⚠️ DUTY CYCLE ENDED"; modal.color = "var(--yellow)"; modal.shadow = "0 0 50px rgba(255,204,0,0.3)"; modal.msg = "OPERATIONAL HOURS COMPLETE.<br>SECURE WORKSTATION."; } else if (type === 'PRAYER') { modal.title = `🕌 PRAYER: ${data.name}`; modal.prayerName = data.name; modal.color = "var(--green)"; modal.shadow = "0 0 60px rgba(0,255,153,0.4)"; animateJackpot(data.imam); } playAlertSound(type); modalTimer = setTimeout(closeModal, 60000); };
+                const closeModal = () => { modal.show = false; if (modalTimer) clearTimeout(modalTimer); };
+
+                // --- 6. LIFECYCLE ---
+                let intervals = [];
+                onMounted(() => {
+                    new Typed('#typed-output', { strings: ["BY ^200 <span style='color:var(--cyan)'>CYBERTEAM BAPPENAS</span>", "SYSTEM STATUS: ^500 <span style='color:var(--green)'>SECURE</span>", "MONITORING ACTIVE..."], typeSpeed: 30, backSpeed: 20, backDelay: 2000, loop: true, contentType: 'html' });
+                    chartInstance = new ApexCharts(chartRef.value, { series: [{ name: 'Incidents', data: [0, 0, 0, 0, 0, 0, 0, 0] }], chart: { type: 'area', height: 80, sparkline: { enabled: true } }, stroke: { curve: 'smooth', width: 2 }, fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.1, stops: [0, 90, 100] } }, colors: ['#f1c40f'] });
+                    chartInstance.render();
+
+                    fetchGeoData(); fetchNews(); fetchSocData(); requestAnimationFrame(clockLoop);
+
+                    // AKTIFKAN SIGNALR TERMINAL
+                    initSignalRTerminal();
+
+                    // --- FITUR: SYSTEM HEARTBEAT LOG ---
+                    // Memunculkan log normal secara acak setiap 8.5 detik
+                    intervals.push(setInterval(() => {
+                        const sysActions = [
+                            "FW_RULE_SYNC ..... <span style='color:var(--green)'>OK</span>",
+                            "ELASTIC_NODE_PING ..... <span style='color:var(--green)'>3ms</span>",
+                            "MEM_USAGE_CHECK ..... <span style='color:var(--cyan)'>STABLE</span>",
+                            "AUTH_GATEWAY_POLL ..... <span style='color:var(--green)'>SECURE</span>",
+                            "N8N_WORKFLOW_SYNC ..... <span style='color:var(--cyan)'>IDLE</span>",
+                            "DB_CLUSTER_HEALTH ..... <span style='color:var(--green)'>GREEN</span>"
+                        ];
+                        const randomAction = sysActions[Math.floor(Math.random() * sysActions.length)];
+                        const t = new Date();
+                        const timeStr = `${t.toLocaleTimeString('id-ID')}::${String(t.getMilliseconds()).padStart(3, '0')}`;
+
+                        sysLogs.value.unshift(`[${timeStr}] <span style='color:#666'>[SYS_HBT]</span> ${randomAction}`);
+                        if (sysLogs.value.length > 25) sysLogs.value.pop();
+                    }, 8500));
+                    epsChartInstance = new ApexCharts(epsChartRef.value, {
+                        series: [{ name: 'EPS', data: epsDataSeries.value }],
+                        chart: {
+                            type: 'bar', height: 60, sparkline: { enabled: true },
+                            animations: { enabled: true, easing: 'linear', dynamicAnimation: { speed: 1000 } }
+                        },
+                        plotOptions: { bar: { columnWidth: '70%', borderRadius: 2 } },
+                        colors: ['#00ffcc'], // Warna Cyan terang
+                        tooltip: { fixed: { enabled: false }, x: { show: false }, marker: { show: false } }
+                    });
+                    epsChartInstance.render();
+
+                    // --- GENERATOR DATA EPS REAL-TIME ---
+                    intervals.push(setInterval(async () => {
+                        try {
+                            const res = await fetch('/api/eps', { headers: { 'X-API-KEY': API_KEY } });
+                            if (res.ok) {
+                                const data = await res.json();
+                                let realEps = data.eps;
+
+                                if (realEps === 0) {
+                                    // MODE 1: AMAN / IDLE (Gunakan data buatan)
+                                    isRealTraffic.value = false;
+                                    const fakeEps = Math.floor(Math.random() * (25 - 12 + 1)) + 12;
+                                    currentEps.value = fakeEps.toString();
+                                    epsDataSeries.value.push(fakeEps);
+                                } else {
+                                    // MODE 2: ADA SERANGAN / LOG ASLI MASUK!
+                                    isRealTraffic.value = true;
+                                    currentEps.value = realEps.toLocaleString('id-ID');
+                                    epsDataSeries.value.push(realEps);
+                                }
+
+                                // Update Grafik
+                                if (epsDataSeries.value.length > 15) epsDataSeries.value.shift();
+                                epsChartInstance.updateSeries([{ data: epsDataSeries.value }]);
+                            }
+                        } catch (e) {
+                            // ...
+                        }
+                    }, 1000));
+
+                    intervals.push(setInterval(() => showBebek.value = !showBebek.value, 10000));
+                    intervals.push(setInterval(fetchSocData, 10000));
+                });
+
+                onUnmounted(() => {
+                    intervals.forEach(clearInterval);
+                    if (terminalConnection) terminalConnection.stop(); // Matikan socket jika tutup halaman
+                });
+
+
+
+
+                return { isTerminalLive, showBebek, epsChartRef,currentEps,locationName, weather, clockHands, clocks, date, shift, soc, nextPrayer, prayerTimes, modal, newsFeed, chartRef, sysLogs, isLoadingData, odometerTickets, incidentModal, initAudioContext, formatTime, getSevClass, toggleFullScreen, closeModal, escapeHtml, openIncidentDetail, closeIncidentDetail, isolateAttacker };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

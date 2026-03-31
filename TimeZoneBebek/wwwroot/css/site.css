@@ -1,0 +1,121 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+/* --- PRAYER DOCK (SIDE PANEL) --- */
+.prayer-dock {
+    position: fixed;
+    top: 20%; /* Posisi vertikal agak ke atas */
+    right: -210px; /* SEMBUNYI DI KANAN (Sisakan 40px untuk tab) */
+    width: 250px;
+    background: rgba(0, 15, 10, 0.95); /* Hitam kehijauan */
+    border: 1px solid #00ff99;
+    border-right: none; /* Tempel ke pinggir */
+    box-shadow: -5px 0 20px rgba(0, 255, 153, 0.2);
+    z-index: 2000;
+    transition: right 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28); /* Animasi mulus */
+    display: flex;
+    border-radius: 10px 0 0 10px;
+    overflow: hidden;
+}
+
+    /* SAAT DI-HOVER: MUNCUL */
+    .prayer-dock:hover {
+        right: 0;
+    }
+
+/* Bagian Tab Kecil (Pegangan) */
+.dock-tab {
+    width: 40px;
+    background: #003322;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+    cursor: pointer;
+    border-right: 1px solid #00ff99;
+}
+
+.dock-vertical-text {
+    writing-mode: vertical-rl; /* Teks Vertikal */
+    text-orientation: mixed;
+    color: #00ff99;
+    font-family: 'Orbitron';
+    font-size: 0.8rem;
+    margin-top: 10px;
+    letter-spacing: 2px;
+}
+
+/* Bagian Konten Dalam */
+.dock-content {
+    flex: 1;
+    padding: 20px;
+}
+
+.dock-header {
+    color: #fff;
+    font-family: 'Orbitron';
+    border-bottom: 1px dashed #00ff99;
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+/* Item List Sholat */
+.prayer-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #222;
+    font-family: 'JetBrains Mono';
+    color: #aaa;
+    font-size: 0.9rem;
+}
+
+    .prayer-item:last-child {
+        border-bottom: none;
+    }
+
+.prayer-name {
+    text-transform: uppercase;
+}
+
+.prayer-time {
+    color: #fff;
+    font-weight: bold;
+}
+
+/* Highlight Sholat Berikutnya (Opsional) */
+.prayer-item.active {
+    color: #00ff99;
+    text-shadow: 0 0 5px #00ff99;
+}

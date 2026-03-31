@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Geo Tracer</title>
+    <link href='https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;500;700;900&display=swap' rel='stylesheet'>
+    <link rel="stylesheet" href="/style.css">
+    <link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css' />
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+            border: 2px solid #333;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
+    </style>
+</head>
+<body>
+    {{PRELOADER}}
+    <div class='scanlines'></div>
+    <div class='cyber-grid'></div>
+    {{SIDEBAR}}
+
+    <div class='container'>
+        <div class='header-box'>
+            <h1 class='page-title glitch' data-text='GEO TRACER'>GEO TRACER</h1>
+            <span class='status-blink' style="color:var(--red); animation:blink 1s infinite;">● TARGET ACQUIRED</span>
+        </div>
+        <div id='map'></div>
+        <div class='grid' style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+            <div class='card'><span class='label'>IP Address</span><div class='value' id='ip-val'>Loading...</div></div>
+            <div class='card'><span class='label'>Location</span><div class='value' id='city-val'>Scanning...</div></div>
+            <div class='card'><span class='label'>ISP / ASN</span><div class='value' id='isp-val'>Scanning...</div></div>
+            <div class='card'><span class='label'>Coordinates</span><div class='value' id='coord-val'>...</div></div>
+        </div>
+    </div>
+
+    <script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>
+    <script>
+        var map = L.map('map').setView([-6.2088, 106.8456], 5);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+
+        async function traceClient() {
+            try {
+                const r = await fetch('/api/geo-trace');
+                const d = await r.json();
+                if (d.status === 'success') {
+                    document.getElementById('ip-val').innerText = d.query;
+                    document.getElementById('city-val').innerText = d.city + ', ' + d.countryCode;
+                    document.getElementById('isp-val').innerText = d.isp;
+                    document.getElementById('coord-val').innerText = d.lat + ', ' + d.lon;
+                    map.flyTo([d.lat, d.lon], 13);
+                    L.marker([d.lat, d.lon]).addTo(map).bindPopup('<b>LOCATED</b><br>' + d.city).openPopup();
+                }
+            } catch (e) { document.getElementById('ip-val').innerText = 'FAILED'; }
+        }
+        traceClient();
+    </script>
+</body>
+</html>

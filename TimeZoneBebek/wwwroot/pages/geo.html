@@ -1,0 +1,727 @@
+﻿<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Geo Tracer 3D // SOC WAR ROOM</title>
+
+    <script src="js/auth-guard.js"></script>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <link href='https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;500;700;900&display=swap' rel='stylesheet'>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@6.6.6/css/flag-icons.min.css" />
+
+    <script src="//unpkg.com/three@0.149.0/build/three.min.js"></script>
+    <script src="//unpkg.com/globe.gl@2.30.0/dist/globe.gl.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+    <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+
+    <style>
+        /* --- CYBER BUTTON --- */
+        .cyber-btn {
+            --primary-color: var(--cyan);
+            position: relative;
+            background: rgba(0, 20, 20, 0.6);
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 10px 25px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+            .cyber-btn:hover {
+                background: var(--primary-color);
+                color: #000;
+                box-shadow: 0 0 25px var(--primary-color);
+                font-weight: 900;
+            }
+
+        .btn-clear {
+            --primary-color: var(--red);
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        .btn-hunt {
+            --primary-color: var(--yellow);
+            border-color: var(--yellow);
+            color: var(--yellow);
+        }
+
+        /* --- GLOBE CONTAINER --- */
+        #globeViz {
+            width: 100%;
+            height: 550px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #000;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8), 0 0 20px rgba(0,255,255,0.05);
+        }
+
+        /* Toast & Others */
+        #attack-notification-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .attack-toast {
+            background: rgba(5, 5, 5, 0.9);
+            border: 1px solid #333;
+            padding: 15px;
+            font-family: 'Orbitron';
+            color: #fff;
+            min-width: 280px;
+            border-left-width: 4px;
+            backdrop-filter: blur(4px);
+            animation: slideIn 0.4s ease-out;
+            box-shadow: 0 0 15px rgba(0,0,0,0.8);
+        }
+
+        .toast-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+        }
+
+        .toast-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono';
+            margin-bottom: 2px;
+        }
+
+        .toast-val {
+            color: var(--cyan);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .status-blink {
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .search-box {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .cyber-input {
+            flex: 1;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            color: #fff;
+            padding: 0 20px;
+            font-family: 'JetBrains Mono';
+            font-size: 1rem;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+            .cyber-input:focus {
+                outline: none;
+                border-color: var(--cyan);
+                box-shadow: 0 0 10px rgba(0,255,255,0.1);
+            }
+
+        .row-animate {
+            animation: slideInRow 0.5s ease-out;
+        }
+
+        @keyframes slideInRow {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body class="loaded">
+    {{PRELOADER}}
+    <div class='scanlines'></div>
+    <div class='cyber-grid'></div>
+    {{SIDEBAR}}
+
+    <div id="app" class='container' @click="unlockAudio">
+
+        <div class='header-box' style="border-bottom: 2px solid var(--cyan); padding-bottom: 20px; margin-bottom: 30px;">
+            <h1 class='page-title glitch' data-text='GEO ATTACKER 3D'>GEO ATTACKER 3D</h1>
+            <div style="text-align:right; margin-top: 10px;">
+                <span style="color:#666; margin-right: 15px; font-family: 'JetBrains Mono'; font-size: 0.9rem;" :style="{ color: latencyColor }">
+                    📶 {{ latencyMs }}ms
+                </span>
+                <span class='status-blink' :style="{ color: statusColor }" style="margin-right: 15px; font-family: 'Orbitron';">
+                    {{ statusText }}
+                </span>
+                <button class="cyber-btn btn-hunt" :class="{ active: isAudioEnabled }" @click="toggleAudio" style="margin-right: 10px;">
+                    {{ isAudioEnabled ? '🔊 AUDIO: ON' : '🔈 AUDIO: OFF' }}
+                </button>
+                <button class="cyber-btn btn-hunt" :class="{ active: isAutoHunt }" @click="toggleLiveMode">
+                    AUTO-HUNT: {{ isAutoHunt ? 'ON' : 'OFF' }}
+                </button>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" class="cyber-input" placeholder="ENTER TARGET IP..." v-model="ipInput" @keyup.enter="manualTrace" :disabled="isAutoHunt">
+            <button class="cyber-btn" @click="manualTrace" :disabled="isAutoHunt || !ipInput">INITIATE SCAN</button>
+            <button class="cyber-btn btn-clear" @click="resetGlobe">RESET</button>
+        </div>
+
+        <div ref="globeVizRef" id='globeViz'></div>
+
+        <div class='geo-grid' v-show="hud.visible">
+            <div class='card hud-card'><span class='label'>Target IP</span><div class='value' style="color:var(--cyan)">{{ hud.ip }}</div></div>
+            <div class='card hud-card'><span class='label'>Location</span><div class='value'>{{ hud.city }}</div></div>
+            <div class='card hud-card'><span class='label'>Coordinates</span><div class='value'>{{ hud.coord }}</div></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+            <div class="intel-box" v-show="intel.visible" style="display:block; height: 100%;">
+                <div class="intel-header">
+                    <div class="intel-title">>> INTELLIGENCE DOSSIER</div>
+                    <div class="flag-icon"><span :class="`fi fi-${intel.cc}`"></span></div>
+                </div>
+                <div class="intel-data-grid">
+                    <div>
+                        <div class="intel-row"><span class="intel-label">ISP</span><span class="intel-value" ref="intIspRef">-</span></div>
+                        <div class="intel-row"><span class="intel-label">ORG</span><span class="intel-value" ref="intOrgRef">-</span></div>
+                        <div class="intel-row"><span class="intel-label">ASN</span><span class="intel-value" style="color:var(--yellow)" ref="intAsRef">-</span></div>
+                    </div>
+                    <div>
+                        <div class="intel-row"><span class="intel-label">TZ</span><span class="intel-value" ref="intTzRef">-</span></div>
+                        <div class="intel-row"><span class="intel-label">REGION</span><span class="intel-value" ref="intRegRef">-</span></div>
+                        <div class="intel-row"><span class="intel-label">TYPE</span><span class="intel-value" :style="{ color: intel.typeColor, fontWeight:'bold' }" ref="intTypeRef">-</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="intel-box" style="display:block; height: 100%;">
+                <div class="intel-header">
+                    <div class="intel-title">>> THREAT ORIGIN STATS</div>
+                    <div style="font-size:0.7rem; color:#666;">LIVE AGGREGATION</div>
+                </div>
+                <div style="padding:15px;">
+                    <div v-if="countryStats.length === 0" style="color:#444; text-align:center; padding-top:20px; font-size: 0.8rem;">AWAITING DATA STREAM...</div>
+                    <div v-for="stat in countryStats" :key="stat.country" style="margin-bottom:10px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px; color:#ccc; font-family:'JetBrains Mono';">
+                            <span><span :class="`fi fi-${stat.cc}`"></span> {{ stat.country }}</span>
+                            <span :style="{ color: stat.color }">{{ stat.count }}</span>
+                        </div>
+                        <div style="background:#111; height:6px; width:100%; border-radius:2px; overflow:hidden; border:1px solid #333;">
+                            <div :style="{ width: stat.percent + '%', background: stat.color, boxShadow: '0 0 8px ' + stat.color }" style="height:100%; transition: width 1s ease-out;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="intel-box" v-show="isAutoHunt" style="display:block; border-left: 4px solid var(--red); margin-top: 20px;">
+            <div class="intel-header">
+                <div class="intel-title">>> ACTIVE THREAT FEED (LAST 10)</div>
+                <div style="font-size:0.7rem; color:#666;">SOURCE: SIEM ELASTIC</div>
+            </div>
+            <table class="threat-table" style="width:100%; font-size:0.8rem;">
+                <thead>
+                    <tr style="text-align:left; color:#666;">
+                        <th style="padding:10px;">COUNTRY</th>
+                        <th>IP ADDRESS</th>
+                        <th style="text-align:center;">FLAG</th>
+                        <th>HITS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="t in threatLog" :key="t.ip" @click="inspectIp(t.ip, t.lat, t.lon)" style="cursor:pointer;" class="row-animate">
+                        <td>{{ t.country || "UNK" }}</td>
+                        <td style="color:#fff;">{{ t.ip }}</td>
+                        <td style="text-align:center;"><span :class="`fi fi-${t.cc}`" style="font-size:1.2em; border-radius:2px;"></span></td>
+                        <td :style="{ color: t.hitsColor, fontWeight: 'bold' }">{{ t.count }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="attack-notification-container">
+            <div v-for="toast in toasts" :key="toast.id" class="attack-toast" :style="{ borderLeftColor: toast.color }">
+                <div class="toast-header" :style="{ color: toast.color }">
+                    <span>{{ toast.icon }} {{ toast.type }}</span>
+                    <span :class="`fi fi-${toast.cc}`"></span>
+                </div>
+                <div class="toast-row"><span class="toast-label">HOST:</span><span class="toast-val">{{ toast.ip }}</span></div>
+            </div>
+        </div>
+
+    </div>
+    <script>
+        const { createApp, ref, reactive, onMounted, onUnmounted, computed } = Vue;
+
+        createApp({
+            setup() {
+                // ==========================================
+                // 1. STATE & CONFIG
+                // ==========================================
+                const LOCAL_TOKEN = localStorage.getItem("CSIRT_KEY") || "";
+                const HOME_LAT = -6.2088;
+                const HOME_LON = 106.8456;
+
+                // Reactive UI State
+                const isAudioEnabled = ref(localStorage.getItem("GEO_AUDIO") === "true");
+                const isAutoHunt = ref(false);
+                const ipInput = ref("");
+                const latencyMs = ref("--");
+                const statusText = ref("● SYSTEM ONLINE");
+                const statusColor = ref("var(--green)");
+
+                const hud = reactive({ ip: "READY", city: "---", coord: "---", visible: true });
+                const intel = reactive({ typeColor: "var(--green)", cc: "xx", visible: false });
+
+                const threatLog = ref([]);
+                const countryStats = ref([]);
+                const toasts = ref([]);
+
+                // Computed
+                const latencyColor = computed(() => {
+                    if (latencyMs.value === "--") return "#666";
+                    const val = parseInt(latencyMs.value);
+                    if (val < 100) return "var(--green)";
+                    if (val < 300) return "var(--yellow)";
+                    return "var(--red)";
+                });
+
+                // DOM Refs for Typed.js & Globe
+                const globeVizRef = ref(null);
+                const intIspRef = ref(null);
+                const intOrgRef = ref(null);
+                const intAsRef = ref(null);
+                const intTzRef = ref(null);
+                const intRegRef = ref(null);
+                const intTypeRef = ref(null);
+
+                // Non-Reactive Variables (for 3D performance)
+                let world = null;
+                let connection = null;
+                let sunLight = null;
+                let seenIPs = new Set();
+                let typeInstances = {};
+                let activeProjectiles = [];
+                let activeExplosions = [];
+                let activeContrails = [];
+                let activeShockwaves = [];
+                let animationId = null;
+                let pingInterval = null;
+
+                // ==========================================
+                // 2. AUDIO ENGINE (HOWLER)
+                // ==========================================
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const sfx = {
+                    sonar: new Howl({ src: ['/assets/sounds/sonar.mp3'], volume: 0.6, spatial: true }),
+                    alarm: new Howl({ src: ['/assets/sounds/alarm.mp3'], volume: 0.4, loop: true, rate: 1.0 }),
+                    lock: new Howl({ src: ['/assets/sounds/lock.mp3'], volume: 0.7 })
+                };
+
+                const unlockAudio = () => { if (audioCtx.state === 'suspended') audioCtx.resume(); };
+
+                const toggleAudio = () => {
+                    isAudioEnabled.value = !isAudioEnabled.value;
+                    localStorage.setItem("GEO_AUDIO", isAudioEnabled.value);
+                    Howler.mute(!isAudioEnabled.value);
+
+                    if (isAudioEnabled.value && 'speechSynthesis' in window) {
+                        const msg = new SpeechSynthesisUtterance("Audio Systems Online.");
+                        msg.rate = 1.0; msg.pitch = 0.8;
+                        window.speechSynthesis.speak(msg);
+                    } else {
+                        if (sfx.alarm) sfx.alarm.stop();
+                        window.speechSynthesis.cancel();
+                    }
+                };
+
+                const playSonar = (lon = 0) => { if (isAudioEnabled.value) { let pan = lon / 180; let id = sfx.sonar.play(); sfx.sonar.stereo(pan, id); } };
+                const playLockSound = () => { if (isAudioEnabled.value) sfx.lock.play(); };
+
+                const playAlarm = (isActive) => {
+                    if (!isAudioEnabled.value) return;
+                    if (isActive) { if (!sfx.alarm.playing()) { sfx.alarm.fade(0, 0.3, 1000); sfx.alarm.play(); } }
+                    else { if (sfx.alarm.playing()) { sfx.alarm.fade(0.3, 0, 1000); setTimeout(() => sfx.alarm.stop(), 1000); } }
+                };
+
+                const speakThreat = (countriesSet) => {
+                    if (!isAudioEnabled.value || !('speechSynthesis' in window)) return;
+                    const u = Array.from(countriesSet).filter(c => c && c.toLowerCase() !== 'xx');
+                    if (u.length === 0) return;
+                    const msg = new SpeechSynthesisUtterance(`Alert. Traffic from ${u.slice(0, 2).join(", ")}.`);
+                    msg.rate = 0.9; msg.pitch = 0.7;
+                    const bot = window.speechSynthesis.getVoices().find(v => v.name.includes('Google') || v.name.includes('David')) || window.speechSynthesis.getVoices()[0];
+                    if (bot) msg.voice = bot;
+                    window.speechSynthesis.cancel(); window.speechSynthesis.speak(msg);
+                };
+
+                // ==========================================
+                // 3. 3D GLOBE ENGINE (THREE.JS)
+                // ==========================================
+                const initGlobe = () => {
+                    world = Globe()(globeVizRef.value)
+                        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
+                        .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+                        .atmosphereColor("#0a3d3d").atmosphereAltitude(0.15)
+                        .arcColor('color').arcDashLength(0.4).arcDashGap(2).arcDashAnimateTime(2000).arcStroke(1.5)
+                        .ringsData([]).ringColor('color').ringMaxRadius(5).ringPropagationSpeed(3).ringRepeatPeriod(1000)
+                        .labelsData([]).labelLat('lat').labelLng('lon').labelText('text')
+                        .labelSize(0.6).labelDotRadius(0.3).labelColor(() => 'rgba(255, 255, 255, 0.85)')
+                        .labelResolution(3).labelAltitude(0.01)
+                        .width(globeVizRef.value.offsetWidth).height(globeVizRef.value.offsetHeight)
+                        .showGraticules(true);
+
+                    const scene = world.scene();
+
+                    // Stars
+                    const starGeo = new THREE.BufferGeometry();
+                    const starPos = [];
+                    for (let i = 0; i < 800; i++) { starPos.push((Math.random() - 0.5) * 2000, (Math.random() - 0.5) * 2000, (Math.random() - 0.5) * 2000); }
+                    starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+                    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.7 })));
+
+                    // Lighting
+                    scene.children.filter(o => o.type === 'DirectionalLight' || o.type === 'AmbientLight').forEach(l => scene.remove(l));
+                    sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
+                    sunLight.position.set(150, 0, 50);
+                    scene.add(sunLight);
+                    scene.add(new THREE.AmbientLight(0x111111));
+
+                    world.controls().autoRotate = true;
+                    world.controls().autoRotateSpeed = 0.5;
+                    world.pointOfView({ lat: HOME_LAT, lng: HOME_LON, altitude: 2.5 });
+
+                    window.addEventListener('resize', () => { if (world) { world.width(globeVizRef.value.offsetWidth); world.height(globeVizRef.value.offsetHeight); } });
+                    animateWarRoom();
+                };
+
+                const launchProjectile = (startLat, startLng, endLat, endLng, color) => {
+                    if (!world) return;
+                    const startPos = world.getCoords(startLat, startLng, 0.5);
+                    const endPos = world.getCoords(endLat, endLng, 0.1);
+                    const vStart = new THREE.Vector3(startPos.x, startPos.y, startPos.z);
+                    const vEnd = new THREE.Vector3(endPos.x, endPos.y, endPos.z);
+
+                    const distance = vStart.distanceTo(vEnd);
+                    const mid = vStart.clone().add(vEnd).multiplyScalar(0.5).normalize().multiplyScalar(100 + (distance * 0.8));
+                    const curve = new THREE.QuadraticBezierCurve3(vStart, mid, vEnd);
+
+                    const tubeGeo = new THREE.TubeGeometry(curve, 12, 0.15, 3, false);
+                    const tubeMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+                    const trailMesh = new THREE.Mesh(tubeGeo, tubeMat);
+                    trailMesh.geometry.setDrawRange(0, 0);
+                    world.scene().add(trailMesh);
+
+                    activeProjectiles.push({ curve, progress: 0, speed: 0.03 + (Math.random() * 0.02), color, trail: trailMesh, maxIndex: tubeGeo.index.count });
+                };
+
+                const createShockwave = (position, color) => {
+                    const mesh = new THREE.Mesh(new THREE.RingGeometry(0.1, 0.3, 16), new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.4, side: THREE.DoubleSide }));
+                    mesh.position.copy(position); mesh.lookAt(new THREE.Vector3(0, 0, 0));
+                    world.scene().add(mesh);
+                    activeShockwaves.push({ mesh, scale: 1, opacity: 0.8 });
+                };
+
+                const createExplosion = (position, color) => {
+                    const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 1), new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.7 }));
+                    mesh.position.copy(position);
+                    world.scene().add(mesh);
+                    activeExplosions.push({ mesh, scale: 1, opacity: 1 });
+                };
+
+                const animateWarRoom = () => {
+                    animationId = requestAnimationFrame(animateWarRoom);
+
+                    if (sunLight) {
+                        const time = Date.now() * 0.0001;
+                        sunLight.position.x = Math.cos(time) * 200;
+                        sunLight.position.z = Math.sin(time) * 200;
+                    }
+
+                    for (let i = activeProjectiles.length - 1; i >= 0; i--) {
+                        const p = activeProjectiles[i];
+                        p.progress += p.speed;
+                        if (p.trail) p.trail.geometry.setDrawRange(0, Math.floor(p.progress * p.maxIndex));
+
+                        if (p.progress >= 1) {
+                            const impactPos = p.curve.getPoint(1);
+                            createExplosion(impactPos, p.color);
+                            createShockwave(impactPos, p.color);
+                            if (p.trail) { p.trail.geometry.setDrawRange(0, p.maxIndex); activeContrails.push({ mesh: p.trail, opacity: 0.9 }); }
+                            activeProjectiles.splice(i, 1);
+                        }
+                    }
+
+                    for (let i = activeExplosions.length - 1; i >= 0; i--) {
+                        const e = activeExplosions[i];
+                        e.scale += 0.2; e.opacity -= 0.03;
+                        e.mesh.scale.set(e.scale, e.scale, e.scale); e.mesh.material.opacity = e.opacity;
+                        if (e.opacity <= 0) { world.scene().remove(e.mesh); e.mesh.geometry.dispose(); e.mesh.material.dispose(); activeExplosions.splice(i, 1); }
+                    }
+
+                    for (let i = activeContrails.length - 1; i >= 0; i--) {
+                        const c = activeContrails[i];
+                        c.opacity -= 0.02; c.mesh.material.opacity = c.opacity;
+                        if (c.opacity <= 0) { world.scene().remove(c.mesh); c.mesh.geometry.dispose(); c.mesh.material.dispose(); activeContrails.splice(i, 1); }
+                    }
+
+                    for (let i = activeShockwaves.length - 1; i >= 0; i--) {
+                        const s = activeShockwaves[i];
+                        s.scale += 0.15; s.opacity -= 0.02;
+                        s.mesh.scale.set(s.scale, s.scale, s.scale); s.mesh.material.opacity = s.opacity;
+                        if (s.opacity <= 0) { world.scene().remove(s.mesh); s.mesh.geometry.dispose(); s.mesh.material.dispose(); activeShockwaves.splice(i, 1); }
+                    }
+                };
+
+                // ==========================================
+                // 4. SIGNALR WEBSOCKET LOGIC
+                // ==========================================
+                const initSignalR = () => {
+                    connection = new signalR.HubConnectionBuilder().withUrl("/threatHub").withAutomaticReconnect().build();
+
+                    connection.on("ReceiveThreats", (data) => processThreatData(data));
+
+                    connection.onreconnecting(() => { statusText.value = "● RECONNECTING SOCKET..."; statusColor.value = "var(--yellow)"; });
+                    connection.onreconnected(() => { statusText.value = "● LIVE FEED (SOCKET ACTIVE)"; statusColor.value = "var(--red)"; });
+                    connection.onclose(() => {
+                        if (isAutoHunt.value) { statusText.value = "● SOCKET DEAD"; statusColor.value = "#666"; alert("CONNECTION LOST"); }
+                    });
+
+                    pingInterval = setInterval(async () => {
+                        if (connection.state === signalR.HubConnectionState.Connected) {
+                            const start = Date.now();
+                            try { await connection.invoke("Ping"); } catch (e) { }
+                            latencyMs.value = Date.now() - start;
+                        }
+                    }, 2000);
+                };
+
+                const toggleLiveMode = async () => {
+                    if (connection.state === signalR.HubConnectionState.Connected) {
+                        await connection.stop();
+                        isAutoHunt.value = false;
+                        statusText.value = "● SYSTEM READY (MANUAL)";
+                        statusColor.value = "var(--green)";
+                        hud.visible = true;
+                    } else {
+                        try {
+                            statusText.value = "● INITIALIZING SOCKET..."; statusColor.value = "var(--yellow)";
+                            await connection.start();
+                            isAutoHunt.value = true;
+                            statusText.value = "● LIVE FEED (SOCKET ACTIVE)"; statusColor.value = "var(--red)";
+                            hud.visible = false;
+                        } catch (e) {
+                            statusText.value = "● CONNECTION FAILED"; statusColor.value = "var(--red)";
+                        }
+                    }
+                };
+
+                // ==========================================
+                // 5. CORE FUNCTIONS
+                // ==========================================
+                const getAttackConfig = (t) => {
+                    const p = { DDOS: '#ff3366', MALWARE: '#00ff99', BRUTE: '#bc13fe', WEB: '#ffcc00', DEFAULT: '#00cccc' };
+                    let attackType = t.type;
+                    if (!attackType) {
+                        if (t.count > 500) attackType = 'DDOS';
+                        else if (t.count > 200) attackType = 'BRUTE';
+                        else attackType = ['MALWARE', 'WEB', 'SUSPICIOUS'][Math.floor(Math.random() * 3)];
+                    }
+                    if (attackType === 'DDOS') return { type: "VOLUMETRIC DDoS", color: p.DDOS, icon: "🔥" };
+                    if (attackType === 'MALWARE') return { type: "MALWARE / BOTNET", color: p.MALWARE, icon: "🦠" };
+                    if (attackType === 'BRUTE' || attackType === 'BRUTEFORCE') return { type: "SSH BRUTEFORCE", color: p.BRUTE, icon: "🔓" };
+                    if (attackType === 'WEB' || attackType === 'WEB_ATTACK') return { type: "WEB INJECTION", color: p.WEB, icon: "💉" };
+                    return { type: "SUSPICIOUS TRAFFIC", color: p.DEFAULT, icon: "⚠" };
+                };
+
+                const processThreatData = (data) => {
+                    if (!world) return;
+
+                    // Render Table
+                    threatLog.value = data.map(t => {
+                        return { ...t, cc: (t.countryCode || "xx").toLowerCase(), hitsColor: t.count > 500 ? 'var(--red)' : (t.count > 200 ? 'var(--yellow)' : 'var(--cyan)') };
+                    });
+
+                    const labels = []; let newThreats = 0; let highSev = 0; let newCountries = new Set();
+                    data.forEach(t => {
+                        const cfg = getAttackConfig(t);
+                        launchProjectile(t.lat, t.lon, HOME_LAT, HOME_LON, cfg.color);
+                        labels.push({ lat: t.lat, lon: t.lon, text: t.ip, color: cfg.color });
+
+                        if (!seenIPs.has(t.ip)) {
+                            seenIPs.add(t.ip); newThreats++;
+                            if (t.country) newCountries.add(t.country);
+                            if (t.count > highSev) highSev = t.count;
+
+                            // Trigger Toast
+                            setTimeout(() => {
+                                const id = Date.now() + Math.random();
+                                toasts.value.push({ id, ip: t.ip, type: cfg.type, color: cfg.color, icon: cfg.icon, cc: (t.countryCode || 'xx').toLowerCase() });
+                                setTimeout(() => { toasts.value = toasts.value.filter(x => x.id !== id); }, 4000);
+                            }, Math.random() * 1000);
+                        }
+                    });
+
+                    world.labelsData(labels);
+                    if (newThreats > 0) {
+                        highSev > 500 ? playAlarm(true) : (playAlarm(false), playSonar(data[0].lon));
+                        playLockSound(); setTimeout(() => speakThreat(newCountries), 1000);
+                    } else playAlarm(false);
+
+                    // Update Chart
+                    const cMap = {}; data.forEach(t => { const c = t.country || "UNK"; cMap[c] = (cMap[c] || 0) + t.count; });
+                    const sorted = Object.entries(cMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                    const maxVal = sorted[0] ? sorted[0][1] : 1;
+                    countryStats.value = sorted.map(([c, count]) => ({ country: c, count, cc: c !== "UNK" ? c.toLowerCase() : "xx", percent: (count / maxVal) * 100, color: (count / maxVal) * 100 > 80 ? 'var(--red)' : 'var(--cyan)' }));
+
+                    if (seenIPs.size > 500) seenIPs.clear();
+                };
+
+                const updateIntelCard = (d) => {
+                    intel.visible = true; intel.cc = d.countryCode ? d.countryCode.toLowerCase() : "xx";
+                    const typeTextFn = (refEl, text, speed, delay) => {
+                        if (typeInstances[refEl.id]) typeInstances[refEl.id].destroy();
+                        refEl.innerHTML = '';
+                        typeInstances[refEl.id] = new Typed(refEl, { strings: [text], typeSpeed: speed, startDelay: delay, showCursor: false });
+                    };
+
+                    typeTextFn(intIspRef.value, d.isp || "Unknown", 10, 0);
+                    typeTextFn(intOrgRef.value, d.org || d.isp, 10, 100);
+                    typeTextFn(intAsRef.value, d.as || "N/A", 20, 200);
+                    typeTextFn(intTzRef.value, d.timezone || "UTC", 20, 300);
+                    typeTextFn(intRegRef.value, (d.regionName || "") + " " + (d.zip || ""), 20, 400);
+
+                    const ispUpper = (d.isp + d.org || "").toUpperCase();
+                    let tLabel = "RESIDENTIAL"; intel.typeColor = "var(--green)";
+                    if (ispUpper.includes("CLOUD") || ispUpper.includes("AWS")) { tLabel = "DATA CENTER"; intel.typeColor = "var(--red)"; }
+
+                    if (typeInstances['type']) typeInstances['type'].destroy();
+                    intTypeRef.value.innerHTML = '';
+                    typeInstances['type'] = new Typed(intTypeRef.value, { strings: ['SCANNING...', `^500${tLabel}`], typeSpeed: 30, backSpeed: 50, showCursor: true, cursorChar: '█', onComplete: (s) => s.cursor.remove() });
+                };
+
+                const manualTrace = async () => {
+                    if (!ipInput.value) return;
+                    hud.visible = true; hud.ip = "TRACING..."; hud.city = "---"; hud.coord = "---";
+                    try {
+                        const r = await fetch(`/api/geo-trace?ip=${ipInput.value}`, { headers: { 'X-API-KEY': LOCAL_TOKEN } });
+                        const d = await r.json();
+                        if (d.status === 'success') {
+                            hud.ip = d.query; hud.city = `${d.city || ''}, ${d.countryCode || d.country || ''}`; hud.coord = `${d.lat}, ${d.lon}`;
+                            updateIntelCard(d);
+                            launchProjectile(d.lat, d.lon, HOME_LAT, HOME_LON, '#00cccc');
+                            if (world) world.pointOfView({ lat: d.lat, lng: d.lon, altitude: 1.5 }, 1500);
+                            playLockSound();
+                        } else alert("IP Not Found");
+                    } catch (e) { alert("Trace Failed"); }
+                };
+
+                const inspectIp = async (targetIp, lat, lon) => {
+                    if (world) world.pointOfView({ lat, lng: lon, altitude: 1.5 }, 2000);
+                    playLockSound();
+                    intIspRef.value.innerText = "FETCHING..."; intTypeRef.value.innerHTML = "<span class='status-blink'>LOADING...</span>";
+                    try {
+                        const r = await fetch(`/api/geo-trace?ip=${targetIp}`, { headers: { 'X-API-KEY': LOCAL_TOKEN } });
+                        const d = await r.json();
+                        if (d.status === 'success') {
+                            hud.visible = true; hud.ip = d.query; hud.city = `${d.city || ''}, ${d.countryCode || ''}`; hud.coord = `${d.lat}, ${d.lon}`;
+                            updateIntelCard(d);
+                        }
+                    } catch (e) { console.error(e); }
+                };
+
+                const resetGlobe = () => {
+                    if (world) { world.arcsData([]); world.ringsData([]); world.labelsData([]); }
+                    hud.ip = "CLEARED"; hud.city = "---"; hud.coord = "---";
+                    if (intIspRef.value) {
+                        [intIspRef, intOrgRef, intAsRef, intTzRef, intRegRef, intTypeRef].forEach(r => { if (r.value) r.value.innerHTML = '-'; });
+                    }
+                };
+
+                // Keyboard Shortcuts
+                const handleKeydown = (e) => {
+                    if (document.activeElement.tagName === 'INPUT') return;
+                    const key = e.key.toLowerCase();
+                    if (key === 'm') toggleAudio();
+                    if (key === 'h') toggleLiveMode();
+                    if (key === 'c') resetGlobe();
+                    if (key === 'f') { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+                };
+
+                // ==========================================
+                // 6. LIFECYCLE
+                // ==========================================
+                onMounted(() => {
+                    initGlobe();
+                    initSignalR();
+                    document.addEventListener('keydown', handleKeydown);
+
+                    if (isAudioEnabled.value) Howler.mute(false);
+                });
+
+                onUnmounted(() => {
+                    if (animationId) cancelAnimationFrame(animationId);
+                    if (pingInterval) clearInterval(pingInterval);
+                    document.removeEventListener('keydown', handleKeydown);
+                    if (connection) connection.stop();
+                });
+
+                return {
+                    isAudioEnabled, isAutoHunt, ipInput, latencyMs, statusText, statusColor, latencyColor,
+                    hud, intel, threatLog, countryStats, toasts,
+                    globeVizRef, intIspRef, intOrgRef, intAsRef, intTzRef, intRegRef, intTypeRef,
+                    toggleAudio, toggleLiveMode, manualTrace, resetGlobe, inspectIp, unlockAudio
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

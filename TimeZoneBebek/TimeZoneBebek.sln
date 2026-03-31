@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeZoneBebek", "TimeZoneBebek.csproj", "{43703A57-A873-D6D0-D288-BCCDA6EA4B44}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{43703A57-A873-D6D0-D288-BCCDA6EA4B44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43703A57-A873-D6D0-D288-BCCDA6EA4B44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43703A57-A873-D6D0-D288-BCCDA6EA4B44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43703A57-A873-D6D0-D288-BCCDA6EA4B44}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6CC06BEE-D3E5-4140-9801-9D77EC3AD3ED}
+	EndGlobalSection
+EndGlobal

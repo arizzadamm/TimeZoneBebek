@@ -1,0 +1,1040 @@
+﻿<!DOCTYPE html>
+<html lang='id'>
+<head>
+    <script src="js/auth-guard.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Command Center</title>
+    <link href='https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;500;700;900&display=swap' rel='stylesheet'>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    {{PRELOADER}}
+    <div class='scanlines'></div>
+    <div class='cyber-grid'></div>
+
+    {{SIDEBAR}}
+
+    <div class='content'>
+    <div class='brand-header'>
+        <div class="title-switcher-container">
+            <h1 id="title-1" class="brand-title glitch switching-title active" data-text="BEBEK PINTAR">BEBEK PINTAR</h1>
+
+            <h1 id="title-2" class="brand-title glitch switching-title" data-text="BAPPENAS CSIRT" style="color:var(--cyan)">BAPPENAS CSIRT</h1>
+        </div>
+
+        <div class='brand-subtitle'><span id='typed-output'></span></div>
+    </div>
+    <div class='time-section'>
+        <div class="date-tracker">
+            <div class="dt-box">
+                <span id="lbl-day" class="dt-day">---</span>
+                <span id="lbl-full-date" style="color:#fff;">Loading Date...</span>
+            </div>
+        </div>
+        <div class="analog-container">
+            <div class="analog-ring-outer"></div>
+
+            <div class="analog-face">
+                <div class="analog-ticks"></div>
+                <div class="analog-num n12">12</div>
+                <div class="analog-num n3">3</div>
+                <div class="analog-num n6">6</div>
+                <div class="analog-num n9">9</div>
+            </div>
+
+            <div class="hand-container">
+                <div class="hand hand-hour" id="hand-h"></div>
+                <div class="hand hand-min" id="hand-m"></div>
+                <div class="hand hand-sec" id="hand-s"></div>
+                <div class="center-hub"></div>
+            </div>
+        </div>
+        <div class='main-clock-box' style="border-bottom:none; padding-bottom:10px; margin-bottom:10px;">
+            <span class='label'>WIB (UTC+7)</span>
+            <div id='clk-wib' class='clock-xl'>00:00:00</div>
+        </div>
+
+        <div class='sub-clock-grid'>
+            <div class='sub-clock'><div class='label-sm'>WITA</div><div id='clk-wita' class='clock-sm'>00:00:00</div></div>
+            <div class='sub-clock'><div class='label-sm'>WIT</div><div id='clk-wit' class='clock-sm'>00:00:00</div></div>
+            <div class='sub-clock'><div class='label-sm'>UTC</div><div id='clk-utc' class='clock-sm'>00:00:00</div></div>
+        </div>
+
+    </div>
+
+    <div class='grid'>
+        <div class='card alert' id="card-defcon" style="text-align:center;">
+            <span class='label'>THREAT LEVEL</span>
+            <div class='value glitch' id="val-defcon" style="font-size:2rem; color:var(--green);">SAFE</div>
+            <div style="font-size:0.7rem; color:#666;" id="val-defcon-desc">SYSTEM SECURE</div>
+        </div>
+
+        <div class='card hud-card'>
+            <span class='label'>OPEN TICKETS</span>
+            <div style="display:flex; align-items:flex-end; justify-content:space-between;">
+                <div class='value' id="val-open-tickets" style="font-size:2.5rem; color:var(--yellow);">0</div>
+                <div style="font-size:0.7rem; color:#888; margin-bottom:10px;">ACTIONABLE</div>
+            </div>
+            <div id="chart-spark1" style="position:absolute; bottom:0; left:0; right:0;"></div>
+        </div>
+        <div class='card'>
+            <span class='label'>TOP THREAT ACTOR</span>
+            <div class='value' id="val-top-attacker" style="font-size:1.2rem;">---</div>
+            <div class='prog-container' style="margin-top:10px;">
+                <div class='prog-fill' id="prog-attacker" style='width: 0%; background:var(--red);'></div>
+            </div>
+            <div style="font-size:0.7rem; color:#666; margin-top:5px; text-align:right;">TODAY'S MOST ACTIVE</div>
+        </div>
+
+        <div class='card'>
+            <span class='label'>SHIFT DURATION</span>
+            <div class='value' id="val-shift-timer">00:00:00</div>
+            <div style="font-size:0.7rem; color:#666;">SINCE 09:00 WIB</div>
+        </div>
+
+        <div class='card hud-card' style="border-color:var(--green);">
+            <span class='label' style="color:var(--green);">NEXT PRAYER</span>
+            <div class='value' id="val-next-prayer-name">---</div>
+            <div style="font-size:0.9rem; color:#fff;" id="val-next-prayer-time">--:--</div>
+        </div>
+
+        <div class='card hud-card' style="display:flex; justify-content:center; align-items:center; position:relative;">
+            <div class="sonar-container">
+                <div class="sonar-sweep"></div>
+                <div class="sonar-blip" style="top: 20%; left: 60%;"></div>
+                <div class="sonar-blip" style="top: 60%; left: 30%; animation-delay: 1s;"></div>
+            </div>
+            <div style="position:absolute; bottom:5px; font-size:0.6rem; color:#666;">LIVE INGEST</div>
+        </div>
+    </div>
+
+    <div class="incident-feed-box">
+        <div class="feed-header">
+            <span>>> LIVE INCIDENT STREAM</span>
+            <span class="status-blink" style="color:var(--red);">● LIVE</span>
+        </div>
+        <table class="feed-table">
+            <thead>
+                <tr>
+                    <th width="15%">TIME</th>
+                    <th width="10%">SEV</th>
+                    <th>TITLE / VECTOR</th>
+                    <th width="20%">ACTOR</th>
+                </tr>
+            </thead>
+            <tbody id="feed-tbody">
+                <tr><td colspan="4" style="text-align:center; color:#666;">WAITING FOR DATA...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+    <div class='ticker-wrap'>
+        <div class='ticker-label'>THREAT INTEL</div>
+        <div class='ticker' id='news-ticker'><div class='ticker-item'>Loading...</div></div>
+    </div>
+
+    <div class='fullscreen-btn' onclick='toggleFullScreen()' title='War Room Mode'>⛶</div>
+
+    <div id="shift-modal" class="shift-modal">
+        <div class="shift-box">
+            <div id="modal-title" class="shift-title">⚠️ ALERT</div>
+
+            <div id="modal-msg" class="shift-msg">
+                SYSTEM NOTIFICATION.
+            </div>
+
+            <button class="shift-btn" onclick="closeShiftModal()">ROGER THAT</button>
+
+            <div class="shift-timer-bar">
+                <div id="shift-progress" class="shift-timer-fill"></div>
+            </div>
+            <div style="text-align:right; font-size:0.7rem; color:#666; margin-top:5px;">AUTO CLOSE IN 60S</div>
+        </div>
+    </div>
+
+    <div class="prayer-dock">
+        <div class="dock-tab">
+            <span style="font-size:1.2rem;">🕌</span>
+            <span class="dock-vertical-text">PRAYER INTEL</span>
+        </div>
+
+        <div class="dock-content">
+            <div class="dock-header">TODAY'S SCHEDULE</div>
+            <div id="prayer-list-container">
+                <div style="text-align:center; color:#666;">LOADING DATA...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let prayerTimes = {};
+        let imamPool = [];    // Wadah daftar nama
+        let prayerAlertTriggered = false;
+        let alertTriggered = false;
+        let socInterval;
+
+        async function updateSocData() {
+            try {
+                // 1. Fetch Incidents (Pastikan API Key Global terdefinisi di auth-guard.js / script utama)
+                const res = await fetch('/api/incidents', {
+                    headers: { 'X-API-KEY': API_KEY }
+                });
+                if (!res.ok) return;
+
+                const incidents = await res.json();
+                const activeIncidents = incidents.filter(i =>
+                    !i.status || i.status.toUpperCase() !== 'RESOLVED'
+                );
+                // Hitung insiden yang belum selesai (Asumsi status default adalah null/kosong = OPEN)
+                const openCount = activeIncidents.length;
+                document.getElementById('val-open-tickets').innerText = openCount;
+
+                // --- B. UPDATE WIDGET: DEFCON LEVEL ---
+                // Logic: Jika ada > 0 Critical = DEFCON 1 (Merah)
+                // Jika ada > 3 High = DEFCON 2 (Orange)
+                // Sisanya Aman
+                const critCount = activeIncidents.filter(i => i.severity === 'CRITICAL').length;
+                const highCount = activeIncidents.filter(i => i.severity === 'HIGH').length;
+
+                const defCard = document.getElementById('card-defcon');
+                const defVal = document.getElementById('val-defcon');
+                const defDesc = document.getElementById('val-defcon-desc');
+
+                if (critCount > 0) {
+                    defVal.innerText = "DEFCON 1";
+                    defVal.style.color = "var(--red)";
+                    defVal.classList.add('glitch');
+                    defDesc.innerText = "CRITICAL THREAT ACTIVE";
+                    defCard.style.borderColor = "var(--red)";
+                    defCard.style.boxShadow = "0 0 15px rgba(255,0,0,0.3)";
+                } else if (highCount > 2) {
+                    defVal.innerText = "DEFCON 3";
+                    defVal.style.color = "#e67e22";
+                    defVal.classList.remove('glitch');
+                    defDesc.innerText = "ELEVATED RISK";
+                    defCard.style.borderColor = "#e67e22";
+                    defCard.style.boxShadow = "none";
+                } else {
+                    defVal.innerText = "DEFCON 5";
+                    defVal.style.color = "var(--green)";
+                    defVal.classList.remove('glitch');
+                    defDesc.innerText = "NORMAL OPERATIONS";
+                    defCard.style.borderColor = "#333";
+                    defCard.style.boxShadow = "none";
+                }
+
+                // --- C. UPDATE TABLE: LATEST STREAM ---
+                const tbody = document.getElementById('feed-tbody');
+                tbody.innerHTML = '';
+
+                // Ambil 5 data teratas (Terbaru)
+                const latest = incidents.slice(0, 5);
+
+                if (latest.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">NO RECENT ACTIVITY</td></tr>';
+                } else {
+                    latest.forEach(inc => {
+                        // Shorten Time
+                        const d = new Date(inc.date);
+                        const timeStr = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+                        // Color Class
+                        let sevClass = 'sev-low';
+                        if (inc.severity === 'MEDIUM') sevClass = 'sev-med';
+                        if (inc.severity === 'HIGH') sevClass = 'sev-hgh';
+                        if (inc.severity === 'CRITICAL') sevClass = 'sev-crt';
+
+                        const row = `
+                    <tr>
+                        <td style="color:#666;">${timeStr}</td>
+                        <td class="${sevClass}">${inc.severity.substring(0, 3)}</td>
+                        <td>${inc.title}</td>
+                        <td style="color:#fff;">${inc.attacker}</td>
+                    </tr>
+                `;
+                        tbody.innerHTML += row;
+                    });
+                }
+
+                // --- D. UPDATE WIDGET: TOP ATTACKER ---
+                // Cari attacker paling sering muncul di list ini
+                if (incidents.length > 0) {
+                    const counts = {};
+                    incidents.forEach(x => { counts[x.attacker] = (counts[x.attacker] || 0) + 1; });
+                    // Sort
+                    const top = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+
+                    document.getElementById('val-top-attacker').innerText = top;
+                    // Progress bar visual (misal max 10 serangan = 100%)
+                    const pct = Math.min((counts[top] / incidents.length) * 100, 100);
+                    document.getElementById('prog-attacker').style.width = pct + "%";
+                }
+                if (incidents.length > 0) {
+                    const trendData = processIncidentTrend(incidents);
+
+                    // Update chart dengan data baru
+                    chartSpark1.updateSeries([{
+                        data: trendData
+                    }]);
+
+                    // Opsional: Ubah warna chart jadi Merah jika tren naik tajam
+                    const lastVal = trendData[trendData.length - 1];
+                    const prevVal = trendData[trendData.length - 2];
+                    if (lastVal > prevVal + 2) {
+                        chartSpark1.updateOptions({ colors: ['#ff3366'] }); // Merah
+                    } else {
+                        chartSpark1.updateOptions({ colors: ['#f1c40f'] }); // Balik Kuning
+                    }
+                }
+
+            } catch (e) { console.error("SOC Data Error", e); }
+        }
+        // --- 1. AUDIO ENGINE: "THE CALL" (Adzan Vibe) ---
+        function playAdzanTone() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+
+            // Fungsi Helper untuk buat nada bergema (Reverb simulation via Release panjang)
+            function playNote(freq, start, dur, type, vol) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, start);
+
+                // Envelope Adzan: Attack Halus -> Sustain -> Release Panjang (Gema)
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(vol, start + 0.5); // Fade In
+                gain.gain.setValueAtTime(vol * 0.8, start + dur - 2.0); // Sustain
+                gain.gain.exponentialRampToValueAtTime(0.001, start + dur + 3.0); // Ekor Gema panjang
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(start);
+                osc.stop(start + dur + 3.0); // Stop setelah gema habis
+            }
+
+            // SEQUENCE: PHRYGIAN DOMINANT SCALE (Nuansa Timur Tengah)
+            // Base Note: E (Mi)
+
+            // Phrase 1: "Allaaaaah..." (Panjang & Rendah)
+            playNote(164.81, now, 5.0, 'sawtooth', 0.15); // E3 (Bass)
+            playNote(329.63, now, 5.0, 'sine', 0.2);     // E4
+
+            // Phrase 2: Naik Nada (F -> G#)
+            playNote(349.23, now + 5.0, 2.0, 'triangle', 0.15); // F4
+            playNote(415.30, now + 7.0, 4.0, 'sine', 0.2);      // G#4
+
+            // Phrase 3: Resolusi Kembali ke E (Tenang)
+            playNote(329.63, now + 11.0, 6.0, 'sine', 0.2);     // E4
+        }
+
+        // --- 2. INIT DATA (GEOLOCATION & API) ---
+        async function initPrayerData() {
+            try {
+                // A. Ambil Daftar Imam
+                const resImam = await fetch('/api/imam-list', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-KEY': API_KEY
+                    }
+                });
+                imamPool = await resImam.json();
+
+                // B. Deteksi Lokasi User
+                if (navigator.geolocation) {
+                    console.log("📍 Detecting Location for Prayer Times...");
+                    navigator.geolocation.getCurrentPosition(async (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+
+                        console.log(`📍 Location Locked: ${lat}, ${lon}`);
+                        await fetchPrayerTimes(lat, lon);
+                    },
+                        (error) => {
+                            console.warn("⚠️ Geolocation blocked/error. Using Jakarta as default.");
+                            fetchPrayerTimes(-6.2088, 106.8456); // Default Jakarta
+                        });
+                } else {
+                    fetchPrayerTimes(-6.2088, 106.8456); // Browser purba
+                }
+
+            } catch (e) { console.error("Prayer System Error", e); }
+        }
+
+        async function fetchPrayerTimes(lat, lon) {
+            const date = new Date();
+            // Gunakan Method 20 (Kemenag RI) atau 4 (Umm Al-Qura)
+            const url = `https://api.aladhan.com/v1/timings/${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}?latitude=${lat}&longitude=${lon}&method=20`;
+
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (data.data && data.data.timings) {
+                prayerTimes = data.data.timings;
+                renderPrayerDock();
+
+                console.log("Jadwal Sholat Updated di Dock");
+                // Update UI jika mau menampilkan jadwal di suatu tempat (opsional)
+            }
+        }
+
+        // --- 3. TRIGGER VISUAL ---
+        function triggerAdzanAlert(pName) {
+            // A. Pilih Imam Secara Random
+            let selectedImam = "TBA";
+            if (imamPool.length > 0) {
+                const randomIndex = Math.floor(Math.random() * imamPool.length);
+                selectedImam = imamPool[randomIndex];
+            }
+
+            // B. Setup Modal Elements
+            const modal = document.getElementById('shift-modal');
+            const titleEl = document.getElementById('modal-title');
+            const msgEl = document.getElementById('modal-msg');
+            const progressBar = document.getElementById('shift-progress');
+            const box = document.querySelector('.shift-box');
+
+            // C. Styling Tema Hijau (Cyber Islamic)
+            box.style.borderColor = "#00ff99";
+            box.style.boxShadow = "0 0 60px rgba(0, 255, 153, 0.4)"; // Glow lebih kuat
+
+            titleEl.innerText = `🕌 PRAYER TIME: ${pName.toUpperCase()}`;
+            titleEl.style.color = "#00ff99";
+
+            msgEl.innerHTML = `
+                    LOCATION SYNCHRONIZED.<br>
+                    TIME FOR ${pName.toUpperCase()} PRAYER.<br>
+                    <br>
+                    <div style="border:1px dashed #00ff99; background:rgba(0,255,153,0.05); padding:15px; display:inline-block; min-width:200px;">
+                        <div style="font-size:0.7rem; color:#888; margin-bottom:5px;">ASSIGNED IMAM</div>
+                        <div style="font-size:1.8rem; color:#fff; font-weight:bold; font-family:'Orbitron'; text-shadow:0 0 10px #00ff99;">
+                            ${selectedImam}
+                        </div>
+                    </div>
+                    <br><br>
+                    <span style="color:#aaa; font-size:0.8rem; font-style:italic;">"Hayya 'alash Sholah"</span>
+                `;
+
+            // D. Show & Play
+            modal.style.display = 'flex';
+            playAdzanTone();
+
+            // E. Timer Bar Hijau
+            if (shiftTimerId) clearTimeout(shiftTimerId);
+            progressBar.style.transition = 'none';
+            progressBar.style.width = '100%';
+            progressBar.style.backgroundColor = "#00ff99"; // Hijau
+            void progressBar.offsetWidth;
+
+            progressBar.style.transition = 'width 60s linear';
+            progressBar.style.width = '0%';
+
+            // F. Auto Close & Reset Style
+            shiftTimerId = setTimeout(() => {
+                closeShiftModal();
+                // Reset style ke default (kuning) setelah tutup
+                setTimeout(() => {
+                    box.style.borderColor = "";
+                    box.style.boxShadow = "";
+                    progressBar.style.backgroundColor = "var(--yellow)";
+                }, 500);
+            }, 60000);
+        }
+        // Audio Context (SFX)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep(freq = 800, type = 'sine', duration = 0.05) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            o.type = type; o.frequency.value = freq;
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(); g.gain.setValueAtTime(0.02, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            o.stop(audioCtx.currentTime + duration);
+        }
+        document.addEventListener('click', () => playBeep(600, 'sawtooth', 0.1));
+        // --- KONFIGURASI JAM PULANG ---
+        const TIME_START = 9;  // Jam 09:00 (Masuk)
+        const TIME_END = 16; // Jam 16:00 (Pulang)
+
+        let shiftAlertTriggered = false; // Agar tidak bunyi berulang-ulang
+        let shiftTimerId;           // ID untuk Timer Auto CloseS
+
+        // --- ADVANCED AUDIO ENGINE ---
+
+        // Helper: Fungsi untuk memainkan satu nada
+        function playTone(freq, startTime, duration, type = 'sine', vol = 0.1) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, startTime);
+
+            // Envelope (Fade In/Out agar tidak "klik")
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(vol, startTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        }
+
+        // SUARA 1: START (SYSTEM ONLINE) - Melodi Naik + Power Up
+        // Bunyi: "Tu-Ti-Tu-Teeeet..." (Semangat)
+        function playStartChime() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+
+            // Melodi Utama (C Major 7 Arpeggio - Cepat)
+            // Format: Frekuensi, Waktu Mulai, Durasi, Jenis Gelombang
+            playTone(261.63, now + 0.0, 0.2, 'triangle'); // C4
+            playTone(329.63, now + 0.1, 0.2, 'triangle'); // E4
+            playTone(392.00, now + 0.2, 0.2, 'triangle'); // G4
+            playTone(493.88, now + 0.3, 0.2, 'triangle'); // B4
+            playTone(523.25, now + 0.4, 0.8, 'square', 0.05); // C5 (Panjang & Tajam)
+
+            // Efek Bass "Whoosh" Naik (Power Up)
+            const oscBass = audioCtx.createOscillator();
+            const gainBass = audioCtx.createGain();
+            oscBass.type = 'sawtooth';
+            oscBass.frequency.setValueAtTime(50, now);
+            oscBass.frequency.exponentialRampToValueAtTime(300, now + 0.5); // Naik nada
+
+            gainBass.gain.setValueAtTime(0.2, now);
+            gainBass.gain.linearRampToValueAtTime(0, now + 0.5);
+
+            oscBass.connect(gainBass);
+            gainBass.connect(audioCtx.destination);
+            oscBass.start(now);
+            oscBass.stop(now + 0.5);
+        }
+
+        // SUARA 2: END (SYSTEM OFFLINE) - Melodi Turun + Shut Down
+        // Bunyi: "Ting... Tong... Tuuuung...." (Santai & Gema)
+        function playEndChime() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+
+            // Melodi Turun (Pentatonic)
+            // Jeda antar nada lebih lama (0.3s) biar santai
+            playTone(880.00, now + 0.0, 0.6, 'sine'); // A5
+            playTone(659.25, now + 0.3, 0.6, 'sine'); // E5
+            playTone(523.25, now + 0.6, 0.6, 'sine'); // C5
+            playTone(392.00, now + 0.9, 1.5, 'sine'); // G4 (Panjang)
+
+            // Efek "Power Down" (Suara menyusut)
+            const oscLow = audioCtx.createOscillator();
+            const gainLow = audioCtx.createGain();
+            oscLow.type = 'triangle';
+            oscLow.frequency.setValueAtTime(200, now);
+            oscLow.frequency.linearRampToValueAtTime(50, now + 1.5); // Turun nada
+
+            gainLow.gain.setValueAtTime(0.1, now);
+            gainLow.gain.linearRampToValueAtTime(0, now + 1.5);
+
+            oscLow.connect(gainLow);
+            gainLow.connect(audioCtx.destination);
+            oscLow.start(now);
+            oscLow.stop(now + 1.5);
+        }
+        // FUNGSI UTAMA: MUNCULKAN MODAL DINAMIS
+        function triggerAlert(type) {
+            const modal = document.getElementById('shift-modal');
+            const titleEl = document.getElementById('modal-title');
+            const msgEl = document.getElementById('modal-msg');
+            const progressBar = document.getElementById('shift-progress');
+
+            // Setup Konten Berdasarkan Tipe
+            if (type === 'START') {
+                titleEl.innerText = "🚀 SYSTEM INITIALIZED";
+                titleEl.style.color = "var(--cyan)";
+                msgEl.innerHTML = `
+                        GOOD MORNING, COMMANDER.<br>
+                        DUTY CYCLE STARTED.<br>
+                        <span style="color:var(--cyan)">ALL SYSTEMS GREEN.</span>
+                    `;
+                // Ganti warna border box jadi Cyan (opsional, via JS style)
+                document.querySelector('.shift-box').style.borderColor = "var(--cyan)";
+                playStartChime();
+            }
+            else if (type === 'END') {
+                titleEl.innerText = "⚠️ DUTY CYCLE ENDED";
+                titleEl.style.color = "var(--yellow)";
+                msgEl.innerHTML = `
+                        OPERATIONAL HOURS COMPLETE.<br>
+                        PLEASE SECURE YOUR WORKSTATION.<br>
+                        <span style="color:var(--yellow)">Have a safe trip home.</span>
+                    `;
+                document.querySelector('.shift-box').style.borderColor = "var(--yellow)";
+                playEndChime();
+            }
+
+            // Tampilkan Modal
+            modal.style.display = 'flex';
+
+            // Logic Auto Close 60 Detik
+            if (shiftTimerId) clearTimeout(shiftTimerId); // Reset timer lama
+
+            // Reset Animasi Bar
+            progressBar.style.transition = 'none';
+            progressBar.style.width = '100%';
+            void progressBar.offsetWidth; // Force Reflow
+
+            // Start Animasi Mundur
+            progressBar.style.transition = 'width 60s linear';
+            progressBar.style.width = '0%';
+
+            shiftTimerId = setTimeout(closeShiftModal, 60000);
+        }
+
+        function closeShiftModal() {
+            document.getElementById('shift-modal').style.display = 'none';
+            if (shiftTimerId) clearTimeout(shiftTimerId);
+        }
+        // --- RENDER DOCK SHOLAT ---
+        function renderPrayerDock() {
+            const container = document.getElementById('prayer-list-container');
+            container.innerHTML = ''; // Reset isi
+
+            if (!prayerTimes) return;
+
+            // Daftar sholat yg mau ditampilkan
+            const pList = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
+            // Cari sholat berikutnya untuk di-highlight (Logic sederhana)
+            const now = new Date();
+            const curH = now.getHours();
+            const curM = now.getMinutes();
+            const curTimeVal = (curH * 60) + curM; // Konversi ke menit total
+
+            let nextFound = false;
+
+            pList.forEach(p => {
+                const timeStr = prayerTimes[p]; // "04:15"
+
+                // Render HTML Item
+                const row = document.createElement('div');
+                row.className = 'prayer-item';
+
+                // Logic Highlight Next Prayer
+                if (!nextFound) {
+                    const [pH, pM] = timeStr.split(':').map(Number);
+                    const pTimeVal = (pH * 60) + pM;
+
+                    if (pTimeVal > curTimeVal) {
+                        row.classList.add('active'); // Tambah warna hijau
+                        nextFound = true;
+                    }
+                }
+
+                row.innerHTML = `
+                <span class="prayer-name">${p}</span>
+                <span class="prayer-time">${timeStr} WIB</span>
+            `;
+
+                container.appendChild(row);
+            });
+        }
+        // Fullscreen
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        }
+        function updateNextPrayerWidget(now) {
+            // Cek apakah data jadwal sholat sudah ada?
+            if (!prayerTimes || Object.keys(prayerTimes).length === 0) {
+                // Jika belum ada data, biarkan strip ---
+                // console.log("Menunggu data sholat..."); 
+                return;
+            }
+
+            const elName = document.getElementById('val-next-prayer-name');
+            const elTime = document.getElementById('val-next-prayer-time');
+
+            // 1. Konversi Waktu Sekarang ke "Menit sejak tengah malam"
+            const curH = now.getHours();
+            const curM = now.getMinutes();
+            const curTotalMins = (curH * 60) + curM;
+
+            // Daftar Sholat (Berurutan)
+            const pList = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
+            let nextPrayerName = "";
+            let nextPrayerTimeStr = "";
+            let timeDiffMins = 0;
+            let foundNext = false;
+
+            // 2. Loop cari sholat berikutnya HARI INI
+            for (let p of pList) {
+                const timeStr = prayerTimes[p]; // misal "18:05"
+                if (!timeStr) continue;
+
+                const [pH, pM] = timeStr.split(':').map(Number);
+                const pTotalMins = (pH * 60) + pM;
+
+                if (pTotalMins > curTotalMins) {
+                    nextPrayerName = p;
+                    nextPrayerTimeStr = timeStr;
+                    timeDiffMins = pTotalMins - curTotalMins;
+                    foundNext = true;
+                    break;
+                }
+            }
+
+            // 3. Handle Edge Case: Lewat Isya (Sholat berikutnya = Subuh Besok)
+            if (!foundNext) {
+                nextPrayerName = "Fajr";
+                nextPrayerTimeStr = prayerTimes['Fajr'];
+
+                if (nextPrayerTimeStr) {
+                    const [pH, pM] = nextPrayerTimeStr.split(':').map(Number);
+                    const pTotalMins = (pH * 60) + pM;
+                    // Hitung sisa menit hari ini + menit subuh besok
+                    timeDiffMins = ((24 * 60) - curTotalMins) + pTotalMins;
+                }
+            }
+
+            // 4. Update UI Widget
+            if (nextPrayerName) {
+                // Format Countdown (Jam:Menit)
+                const hoursLeft = Math.floor(timeDiffMins / 60);
+                const minsLeft = timeDiffMins % 60;
+                const countdownStr = `-${String(hoursLeft).padStart(2, '0')}:${String(minsLeft).padStart(2, '0')}`;
+
+                elName.innerText = nextPrayerName.toUpperCase();
+
+                // Tampilkan Waktu Sholat + Countdown
+                elTime.innerHTML = `${nextPrayerTimeStr} <span style="color:#888; font-size:0.7rem; margin-left:5px;">(${countdownStr})</span>`;
+
+                // Efek Merah Berkedip jika < 10 Menit lagi
+                if (hoursLeft === 0 && minsLeft < 10) {
+                    elTime.style.color = "var(--red)";
+                    elTime.classList.add('status-blink');
+                    elName.style.color = "var(--red)";
+                } else {
+                    elTime.style.color = "#fff";
+                    elTime.classList.remove('status-blink');
+                    elName.style.color = "#fff";
+                }
+            }
+        }
+        function startClock() {
+            // Helper function formatting
+            const pad = (n) => String(n).padStart(2, '0');
+
+            // Fungsi Render (Dijalankan 60fps)
+            function render() {
+                const now = new Date();
+
+                // --- 1. HITUNG ROTASI JARUM (SMOOTH) ---
+                const ms = now.getMilliseconds();
+                const sec = now.getSeconds();
+                const min = now.getMinutes();
+                const hr = now.getHours();
+
+                // KUNCI GERAKAN HALUS:
+                // Detik sekarang + (Milidetik / 1000)
+                // Contoh: Detik 10.5 (setengah jalan ke 11)
+                const smoothSec = sec + (ms / 1000);
+
+                // Hitung Derajat
+                const secDeg = smoothSec * 6; // 360 derajat / 60 detik = 6
+                const minDeg = (min * 6) + (sec * 0.1);
+                const hrDeg = ((hr % 12) * 30) + (min * 0.5);
+
+                // Terapkan Rotasi
+                const handS = document.getElementById('hand-s');
+                const handM = document.getElementById('hand-m');
+                const handH = document.getElementById('hand-h');
+
+                if (handS) handS.style.transform = `rotate(${secDeg}deg)`;
+                if (handM) handM.style.transform = `rotate(${minDeg}deg)`;
+                if (handH) handH.style.transform = `rotate(${hrDeg}deg)`;
+
+                // Loop animasi frame berikutnya
+                requestAnimationFrame(render);
+            }
+
+            function updateText() {
+                const now = new Date();
+
+                // 1. Update Tanggal Masehi
+                const days = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'];
+                const months = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
+
+                document.getElementById('lbl-day').innerText = days[now.getDay()];
+                document.getElementById('lbl-full-date').innerText = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+
+                // --- 2. LOGIC TANGGAL HIJRIAH (FIXED) ---
+                // Format: "17 Rajab 1447"
+                const hijriDate = new Intl.DateTimeFormat('id-ID-u-ca-islamic', {
+                    day: 'numeric', month: 'long', year: 'numeric'
+                }).format(now);
+
+                // Cek apakah elemen hijri sudah ada? Kalau belum, buat.
+                const dateBox = document.querySelector('.dt-box');
+                let hSpan = document.getElementById('lbl-hijri');
+
+                if (!hSpan) {
+                    hSpan = document.createElement('span');
+                    hSpan.id = 'lbl-hijri';
+                    hSpan.className = 'hijri-date';
+                    dateBox.appendChild(hSpan);
+                }
+                hSpan.innerText = hijriDate;
+                // ----------------------------------------
+
+
+                // 3. Update Jam Digital World Clock
+                const g = (z) => new Intl.DateTimeFormat('id-ID', {
+                    timeZone: z, hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'
+                }).format(now).replace(/\./g, ':');
+
+                document.getElementById('clk-wib').innerText = g('Asia/Jakarta');
+                document.getElementById('clk-wita').innerText = g('Asia/Makassar');
+                document.getElementById('clk-wit').innerText = g('Asia/Jayapura');
+                document.getElementById('clk-utc').innerText = g('UTC');
+
+                // --- 4. LOGIC NEXT PRAYER WIDGET (NEW) ---
+
+                updateNextPrayerWidget(now); 
+
+                // --- 5. LOGIC ALERTS (SHIFT & ADZAN) ---
+                const h = now.getHours();
+                const m = now.getMinutes();
+                const s = now.getSeconds();
+
+                // Logic Shift
+                if (h === TIME_START && m === 0 && s === 0) {
+                    if (!alertTriggered) { triggerAlert('START'); alertTriggered = true; }
+                } else if (h === TIME_END && m === 0 && s === 0) {
+                    if (!alertTriggered) { triggerAlert('END'); alertTriggered = true; }
+                } else { if (s > 2) alertTriggered = false; }
+
+                // Logic Adzan Trigger
+                if (prayerTimes) {
+                    const nowH = String(h).padStart(2, '0');
+                    const nowM = String(m).padStart(2, '0');
+                    const currentTimeStr = `${nowH}:${nowM}`;
+                    const pList = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
+                    pList.forEach(p => {
+                        if (prayerTimes[p] === currentTimeStr && s === 0) {
+                            if (!prayerAlertTriggered) {
+                                triggerAdzanAlert(p);
+                                prayerAlertTriggered = true;
+                            }
+                        }
+                    });
+                    if (s > 2) prayerAlertTriggered = false;
+                }
+
+                // --- 6. LOGIC SHIFT TIMER (SOC Widget) ---
+                // Hitung durasi kerja dari jam 09:00
+                const shiftStart = new Date();
+                shiftStart.setHours(TIME_START, 0, 0, 0);
+                let diff = now - shiftStart;
+
+                // Fix: Jika lewat tengah malam tapi belum reset shift besok
+                // (Ini logic sederhana, anggap shift reset tiap hari)
+                if (diff < 0) {
+                    document.getElementById('val-shift-timer').innerText = "OFF DUTY";
+                    document.getElementById('val-shift-timer').style.color = "#666";
+                } else {
+                    const hh = Math.floor(diff / (1000 * 60 * 60));
+                    const mm = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const ss = Math.floor((diff % (1000 * 60)) / 1000);
+                    document.getElementById('val-shift-timer').innerText =
+                        `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+                    document.getElementById('val-shift-timer').style.color = "var(--cyan)";
+                }
+            }
+
+            // Jalankan
+            requestAnimationFrame(render); // Animasi Jarum (Smooth)
+            setInterval(updateText, 1000); // Update Teks (Hemat resource)
+            updateText(); // Run immediately
+        }
+        // Fix Audio Context Policy
+        document.addEventListener('click', () => {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        });
+        startClock();
+        initPrayerData();
+        fetch('/api/news', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-KEY': API_KEY
+            }
+        })
+            .then(r => {
+                if (r.status === 401 || r.status === 403) {
+                    console.warn("Unauthorized access to news.");
+                    return [];
+                }
+                return r.json();
+            })
+            .then(d => {
+                if (d && d.length) { 
+                    const h = d.map(i => `<div class='ticker-item'><span style='color:var(--yellow);animation:pulse 1s infinite;'>[NEWS]</span> <a href='${i.link}' target='_blank'>${i.title}</a></div>`).join('');
+
+                    document.getElementById('news-ticker').innerHTML = h + h;
+                }
+            }).catch(err => {
+                console.error("Gagal memuat berita:", err);
+                document.getElementById('news-ticker').innerHTML = "<div class='ticker-item' style='color:red;'>⚠️ NEWS FEED OFFLINE</div>";
+            });
+
+        // --- 1. AKTIFKAN TYPED.JS ---
+        var typed = new Typed('#typed-output', {
+            strings: [
+                "BY ^200 <span style='color:var(--cyan)'>CYBERTEAM BAPPENAS</span>", // ^200 artinya pause 200ms
+                "SYSTEM STATUS: ^500 <span style='color:var(--green)'>SECURE</span>",
+                "MONITORING ACTIVE..."
+            ],
+            typeSpeed: 30,
+            backSpeed: 20,
+            backDelay: 2000,
+            startDelay: 500,
+            loop: true,
+            contentType: 'html' // Agar bisa render warna span
+        });
+
+        // --- 2. CONTOH TOASTIFY (Panggil saat refresh data) ---
+        function showToast(msg, type = 'info') {
+            let color = type === 'alert' ? "linear-gradient(to right, #ff5f6d, #ffc371)" : "linear-gradient(to right, #00b09b, #96c93d)";
+            if (type === 'cyber') color = "linear-gradient(to right, #000000, #004e92)";
+
+            Toastify({
+                text: msg,
+                duration: 3000,
+                gravity: "top", // top or bottom
+                position: "right", // left, center or right
+                stopOnFocus: true, // Prevents dismissing of toast on hover
+                style: {
+                    background: "#111",
+                    border: "1px solid var(--cyan)",
+                    color: "var(--cyan)",
+                    boxShadow: "0 0 10px rgba(0,255,204,0.2)",
+                    fontFamily: "Orbitron"
+                }
+            }).showToast();
+        }
+
+        // Panggil Toast saat halaman siap
+        showToast("SYSTEM INITIALIZED", "cyber");
+
+        // --- TITLE SWITCHER LOGIC ---
+
+        // Waktu tunggu sebelum berganti (ms)
+        const switchDelay = 10000; // Ganti setiap 10 detik
+
+        let showingBebek = true; // Status saat ini
+
+        function switchTitle() {
+            const t1 = document.getElementById('title-1'); // Bebek Pintar
+            const t2 = document.getElementById('title-2'); // BAPPENAS CSIRT
+
+            if (showingBebek) {
+                // Ganti ke CSIRT
+                t1.classList.remove('active'); 
+
+                setTimeout(() => {
+                    t2.classList.add('active'); 
+                }, 500);
+            } else {
+  
+                t2.classList.remove('active');
+                setTimeout(() => {
+                    t1.classList.add('active'); 
+                }, 500);
+            }
+
+            showingBebek = !showingBebek; // Ubah status
+        }
+        // --- APEXCHARTS SETUP ---
+        var optionsSpark1 = {
+            series: [{ name: 'Incidents', data: [0, 0, 0, 0, 0, 0, 0, 0] }], // Data dummy awal
+            chart: {
+                type: 'area',
+                height: 80,
+                sparkline: { enabled: true }, // Mode Sparkline (Hapus grid/axis)
+                animations: { enabled: true }
+            },
+            stroke: { curve: 'smooth', width: 2 },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.7,
+                    opacityTo: 0.1,
+                    stops: [0, 90, 100]
+                }
+            },
+            colors: ['#f1c40f'], // Warna Kuning Cyber
+            tooltip: {
+                theme: 'dark',
+                x: { show: false },
+                y: { title: { formatter: function () { return '' } } }
+            }
+        };
+
+        // Render Chart Pertama kali
+        var chartSpark1 = new ApexCharts(document.querySelector("#chart-spark1"), optionsSpark1);
+        chartSpark1.render();
+
+        // --- HELPER: Group Incidents by Hour (Last 12 Hours) ---
+        function processIncidentTrend(incidents) {
+            const hoursMap = {};
+            const now = new Date();
+
+            // 1. Inisialisasi 12 jam terakhir dengan 0
+            for (let i = 11; i >= 0; i--) {
+                const d = new Date(now.getTime() - (i * 60 * 60 * 1000));
+                const key = d.getHours(); // Ambil jamnya saja (0-23)
+                hoursMap[key] = 0;
+            }
+
+            // 2. Hitung Insiden
+            incidents.forEach(inc => {
+                const d = new Date(inc.date);
+                // Hanya hitung jika insiden terjadi dalam 12 jam terakhir
+                const diffMs = now - d;
+                const diffHours = diffMs / (1000 * 60 * 60);
+
+                if (diffHours <= 12) {
+                    const h = d.getHours();
+                    if (hoursMap[h] !== undefined) {
+                        hoursMap[h]++;
+                    }
+                }
+            });
+
+            // 3. Konversi ke Array untuk Chart
+            // Object keys tidak menjamin urutan, jadi kita loop ulang berdasarkan jam real
+            const dataSeries = [];
+            for (let i = 11; i >= 0; i--) {
+                const d = new Date(now.getTime() - (i * 60 * 60 * 1000));
+                const key = d.getHours();
+                dataSeries.push(hoursMap[key]);
+            }
+
+            return dataSeries;
+        }
+
+        updateSocData();
+        setInterval(updateSocData, 10000); // Refresh data tiap 5 detik
+
+
+    </script>
+</body>
+</html>

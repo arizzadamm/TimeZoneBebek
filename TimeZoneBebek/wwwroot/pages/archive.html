@@ -1,0 +1,598 @@
+﻿<!DOCTYPE html>
+<html lang='id'>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>INCIDENT ARCHIVE - Command Center</title>
+
+    <script src="js/auth-guard.js"></script>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <script src="https://unpkg.com/typed.js@2.0.16/dist/typed.umd.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href='https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;500;700;900&display=swap' rel='stylesheet'>
+    <link rel="stylesheet" href="/style.css">
+
+    <style>
+        /* ARCHIVE SPECIFIC STYLES */
+        .archive-container {
+            width: 95%;
+            max-width: 1400px;
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Toolbar (Filters & Actions) */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,20,20,0.8);
+            border: 1px solid var(--cyan);
+            padding: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .action-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .cyber-input, .cyber-select {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 8px 12px;
+            font-family: 'JetBrains Mono';
+            outline: none;
+            transition: 0.3s;
+        }
+
+            .cyber-input:focus, .cyber-select:focus {
+                box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+            }
+
+        .cyber-input {
+            flex: 1;
+        }
+
+        .cyber-btn {
+            background: rgba(0, 255, 204, 0.1);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 8px 15px;
+            font-family: 'Orbitron';
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+            .cyber-btn:hover:not(:disabled) {
+                background: var(--cyan);
+                color: #000;
+                box-shadow: 0 0 15px var(--cyan);
+            }
+
+            .cyber-btn.btn-red {
+                border-color: var(--red);
+                color: var(--red);
+                background: rgba(255, 51, 102, 0.1);
+            }
+
+                .cyber-btn.btn-red:hover:not(:disabled) {
+                    background: var(--red);
+                    color: #fff;
+                    box-shadow: 0 0 15px var(--red);
+                }
+
+            .cyber-btn:disabled {
+                border-color: #555;
+                color: #555;
+                cursor: not-allowed;
+                background: transparent;
+            }
+
+        /* Table Styles */
+        .table-wrapper {
+            overflow-x: auto;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid #333;
+        }
+
+        .cyber-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+            .cyber-table th {
+                background: rgba(0, 255, 204, 0.1);
+                color: var(--cyan);
+                padding: 12px;
+                text-align: left;
+                font-family: 'Orbitron';
+                border-bottom: 2px solid var(--cyan);
+            }
+
+            .cyber-table td {
+                padding: 12px;
+                border-bottom: 1px solid #222;
+                vertical-align: middle;
+            }
+
+            .cyber-table tbody tr:hover {
+                background: rgba(0, 255, 204, 0.05);
+            }
+
+        .badge {
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .status-open {
+            background: var(--yellow);
+            color: #000;
+        }
+
+        .status-resolved {
+            background: var(--green);
+            color: #000;
+        }
+
+        .status-investigating {
+            background: #e67e22;
+            color: #fff;
+        }
+
+        /* Detail Modal */
+        .detail-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .detail-modal {
+            background: #0a0a0a;
+            border: 1px solid var(--cyan);
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);
+        }
+
+        .detail-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--cyan);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 255, 204, 0.1);
+        }
+
+        .detail-title {
+            font-family: 'Orbitron';
+            color: var(--cyan);
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--red);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .detail-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .detail-row {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 10px;
+            border-bottom: 1px dashed #333;
+            padding-bottom: 10px;
+        }
+
+        .detail-label {
+            color: #888;
+            font-family: 'Orbitron';
+            font-size: 0.8rem;
+        }
+
+        .detail-val {
+            color: #fff;
+        }
+
+        .ai-box {
+            background: rgba(0, 20, 20, 0.5);
+            border: 1px dashed var(--yellow);
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .ai-title {
+            color: var(--yellow);
+            font-family: 'Orbitron';
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ai-content {
+            white-space: pre-wrap;
+            font-size: 0.85rem;
+            color: #ddd;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body class="loaded">
+    {{PRELOADER}}
+    <div class='scanlines'></div>
+    <div class='cyber-grid'></div>
+    {{SIDEBAR}}
+
+    <div id="app" class='content'>
+        <div class='brand-header' style="margin-bottom: 0;">
+            <h1 class="brand-title glitch active" data-text="INCIDENT ARCHIVE">INCIDENT ARCHIVE</h1>
+            <div class='brand-subtitle'><span id='typed-output'></span></div>
+        </div>
+
+        <div class="archive-container">
+
+            <div class="toolbar">
+                <div class="filter-group">
+                    <input type="text" class="cyber-input" placeholder="Search title, attacker, or ID..." v-model="searchQuery">
+                    <select class="cyber-select" v-model="filterSev">
+                        <option value="ALL">ALL SEVERITY</option>
+                        <option value="CRITICAL">CRITICAL</option>
+                        <option value="HIGH">HIGH</option>
+                        <option value="MEDIUM">MEDIUM</option>
+                        <option value="LOW">LOW</option>
+                    </select>
+                    <select class="cyber-select" v-model="filterStatus">
+                        <option value="ALL">ALL STATUS</option>
+                        <option value="OPEN">OPEN</option>
+                        <option value="INVESTIGATING">INVESTIGATING</option>
+                        <option value="RESOLVED">RESOLVED</option>
+                    </select>
+                </div>
+                <div class="action-group">
+                    <button class="cyber-btn" @click="fetchIncidents" title="Refresh Data">
+                        <i class="fas fa-sync-alt" :class="{ 'fa-spin': isLoading }"></i> REFRESH
+                    </button>
+                    <button class="cyber-btn" :disabled="selectedIds.length === 0" @click="bulkResolve">
+                        <i class="fas fa-check-double"></i> RESOLVE SELECTED ({{ selectedIds.length }})
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="cyber-table">
+                    <thead>
+                        <tr>
+                            <th width="40" style="text-align:center;">
+                                <input type="checkbox" @change="toggleAll" :checked="isAllSelected && filteredIncidents.length > 0">
+                            </th>
+                            <th width="150">DATE / TIME</th>
+                            <th width="100">SEVERITY</th>
+                            <th>INCIDENT TITLE</th>
+                            <th width="150">ATTACKER</th>
+                            <th width="120">STATUS</th>
+                            <th width="150" style="text-align:center;">ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="isLoading && incidents.length === 0">
+                            <td colspan="7" style="text-align:center; padding: 30px; color: var(--cyan);">
+                                <i class="fas fa-circle-notch fa-spin fa-2x"></i><br><br>FETCHING ARCHIVE...
+                            </td>
+                        </tr>
+                        <tr v-else-if="filteredIncidents.length === 0">
+                            <td colspan="7" style="text-align:center; padding: 30px; color: #666;">
+                                NO INCIDENTS MATCHING YOUR CRITERIA
+                            </td>
+                        </tr>
+                        <tr v-for="inc in filteredIncidents" :key="inc.id">
+                            <td style="text-align:center;">
+                                <input type="checkbox" :value="inc.id" v-model="selectedIds">
+                            </td>
+                            <td style="color:#aaa;">{{ formatDate(inc.date) }}</td>
+                            <td :class="getSevClass(inc.severity)">{{ inc.severity }}</td>
+                            <td style="color:#fff;">{{ inc.title }}</td>
+                            <td style="color:#ccc; font-family:monospace;">{{ inc.attacker }}</td>
+                            <td><span :class="getStatusClass(inc.status)" class="badge">{{ inc.status }}</span></td>
+                            <td style="text-align:center;">
+                                <div style="display:flex; gap:5px; justify-content:center;">
+                                    <button class="cyber-btn" style="padding:5px 8px; font-size:0.7rem;" @click="openDetail(inc)" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="cyber-btn" style="padding:5px 8px; font-size:0.7rem;" v-if="inc.status !== 'RESOLVED'" @click="updateStatus(inc.id, 'RESOLVED')" title="Mark as Resolved">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="cyber-btn btn-red" style="padding:5px 8px; font-size:0.7rem;" @click="deleteIncident(inc.id)" title="Delete Record">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="text-align:right; color:#666; font-size:0.8rem;">
+                SHOWING {{ filteredIncidents.length }} OF {{ incidents.length }} RECORDS
+            </div>
+
+        </div> <div class="detail-overlay" v-if="activeIncident" @click.self="closeDetail">
+            <div class="detail-modal">
+                <div class="detail-header">
+                    <h2 class="detail-title">INCIDENT INTEL: {{ activeIncident.id }}</h2>
+                    <button class="close-btn" @click="closeDetail"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="detail-body">
+                    <div class="detail-row"><div class="detail-label">TITLE</div><div class="detail-val" style="color:var(--cyan); font-weight:bold;">{{ activeIncident.title }}</div></div>
+                    <div class="detail-row"><div class="detail-label">TIMESTAMP</div><div class="detail-val">{{ formatDate(activeIncident.date) }}</div></div>
+                    <div class="detail-row"><div class="detail-label">SEVERITY</div><div class="detail-val" :class="getSevClass(activeIncident.severity)">{{ activeIncident.severity }}</div></div>
+                    <div class="detail-row"><div class="detail-label">STATUS</div><div class="detail-val"><span :class="getStatusClass(activeIncident.status)" class="badge">{{ activeIncident.status }}</span></div></div>
+                    <div class="detail-row"><div class="detail-label">THREAT ACTOR</div><div class="detail-val" style="font-family:monospace;">{{ activeIncident.attacker }}</div></div>
+                    <div class="detail-row"><div class="detail-label">SUMMARY</div><div class="detail-val">{{ activeIncident.summary }}</div></div>
+                    <div class="detail-row">
+                        <div class="detail-label">TAGS</div>
+                        <div class="detail-val" style="display:flex; gap:5px; flex-wrap:wrap;">
+                            <span v-for="tag in activeIncident.tags" :key="tag" style="background:#333; padding:2px 8px; border-radius:10px; font-size:0.75rem;">#{{ tag }}</span>
+                        </div>
+                    </div>
+
+                    <div class="ai-box">
+                        <div class="ai-title">
+                            <i class="fas fa-brain"></i> AI THREAT ANALYSIS
+                            <button v-if="!activeIncident.aiAnalysis" class="cyber-btn" style="margin-left:auto; font-size:0.7rem; padding:4px 8px;" @click="analyzeIncident" :disabled="isAnalyzing">
+                                <span v-if="isAnalyzing"><i class="fas fa-spinner fa-spin"></i> ANALYZING...</span>
+                                <span v-else>RUN ANALYSIS</span>
+                            </button>
+                        </div>
+                        <div class="ai-content" v-if="activeIncident.aiAnalysis">{{ activeIncident.aiAnalysis }}</div>
+                        <div class="ai-content" v-else-if="isAnalyzing" style="color:#888;">AI is processing the incident telemetry. Please wait...</div>
+                        <div class="ai-content" v-else style="color:#666;">No AI analysis available for this incident. Run analysis to generate insights.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                // State Variables
+                const incidents = ref([]);
+                const isLoading = ref(false);
+                const isAnalyzing = ref(false);
+
+                // Filters
+                const searchQuery = ref("");
+                const filterSev = ref("ALL");
+                const filterStatus = ref("ALL");
+
+                // Selections & Modal
+                const selectedIds = ref([]);
+                const activeIncident = ref(null);
+
+                // ==========================================
+                // COMPUTED PROPERTIES (REAL-TIME FILTERING)
+                // ==========================================
+                const filteredIncidents = computed(() => {
+                    return incidents.value.filter(inc => {
+                        // 1. Match Search
+                        const q = searchQuery.value.toLowerCase();
+                        const matchSearch = !q ||
+                            inc.title.toLowerCase().includes(q) ||
+                            inc.attacker.toLowerCase().includes(q) ||
+                            inc.id.toLowerCase().includes(q);
+
+                        // 2. Match Severity
+                        const matchSev = filterSev.value === "ALL" || inc.severity === filterSev.value;
+
+                        // 3. Match Status
+                        const matchStatus = filterStatus.value === "ALL" || inc.status === filterStatus.value;
+
+                        return matchSearch && matchSev && matchStatus;
+                    });
+                });
+
+                const isAllSelected = computed(() => {
+                    return filteredIncidents.value.length > 0 &&
+                        selectedIds.value.length === filteredIncidents.value.length;
+                });
+
+                // ==========================================
+                // METHODS (API CALLS)
+                // ==========================================
+                const fetchIncidents = async () => {
+                    isLoading.value = true;
+                    try {
+                        const res = await fetch('/api/incidents', { headers: { 'X-API-KEY': API_KEY } });
+                        if (res.ok) {
+                            incidents.value = await res.json();
+                        }
+                    } catch (e) {
+                        showToast("Failed to fetch database", "alert");
+                    } finally {
+                        isLoading.value = false;
+                    }
+                };
+
+                const deleteIncident = async (id) => {
+                    if (!confirm(`WARNING: Are you sure you want to permanently delete incident ${id}?`)) return;
+                    try {
+                        const res = await fetch(`/api/incidents/${id}`, {
+                            method: 'DELETE', headers: { 'X-API-KEY': API_KEY }
+                        });
+                        if (res.ok) {
+                            showToast("Record Deleted", "cyber");
+                            incidents.value = incidents.value.filter(i => i.id !== id);
+                            // Remove from selection if deleted
+                            selectedIds.value = selectedIds.value.filter(selectedId => selectedId !== id);
+                        }
+                    } catch (e) { showToast("Delete failed", "alert"); }
+                };
+
+                const updateStatus = async (id, newStatus) => {
+                    try {
+                        const res = await fetch(`/api/incidents/${id}/status`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-API-KEY': API_KEY },
+                            body: JSON.stringify(newStatus)
+                        });
+                        if (res.ok) {
+                            showToast(`Status Updated to ${newStatus}`, "cyber");
+                            const index = incidents.value.findIndex(i => i.id === id);
+                            if (index !== -1) incidents.value[index].status = newStatus;
+                        }
+                    } catch (e) { showToast("Update failed", "alert"); }
+                };
+
+                const bulkResolve = async () => {
+                    if (!confirm(`Mark ${selectedIds.value.length} incidents as RESOLVED?`)) return;
+                    try {
+                        const res = await fetch(`/api/incidents/bulk-status`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-API-KEY': API_KEY },
+                            body: JSON.stringify({ ids: selectedIds.value, status: 'RESOLVED' })
+                        });
+                        if (res.ok) {
+                            showToast(`Batch Update Successful`, "cyber");
+                            // Update local data
+                            selectedIds.value.forEach(id => {
+                                const item = incidents.value.find(i => i.id === id);
+                                if (item) item.status = 'RESOLVED';
+                            });
+                            selectedIds.value = []; // Clear selection
+                        }
+                    } catch (e) { showToast("Batch update failed", "alert"); }
+                };
+
+                const analyzeIncident = async () => {
+                    if (!activeIncident.value) return;
+                    isAnalyzing.value = true;
+                    try {
+                        const res = await fetch(`/api/incidents/analyze/${activeIncident.value.id}`, {
+                            method: 'POST', headers: { 'X-API-KEY': API_KEY }
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            showToast("AI Analysis Complete", "cyber");
+                            activeIncident.value.aiAnalysis = data.analysis;
+                            // Update in list
+                            const item = incidents.value.find(i => i.id === activeIncident.value.id);
+                            if (item) item.aiAnalysis = data.analysis;
+                        } else {
+                            throw new Error(data.message || "Analysis Failed");
+                        }
+                    } catch (e) {
+                        showToast(e.message, "alert");
+                    } finally {
+                        isAnalyzing.value = false;
+                    }
+                };
+
+                // ==========================================
+                // UTILITIES & UI METHODS
+                // ==========================================
+                const toggleAll = (e) => {
+                    if (e.target.checked) {
+                        selectedIds.value = filteredIncidents.value.map(i => i.id);
+                    } else {
+                        selectedIds.value = [];
+                    }
+                };
+
+                const openDetail = (inc) => { activeIncident.value = inc; };
+                const closeDetail = () => { activeIncident.value = null; };
+
+                const formatDate = (d) => {
+                    const date = new Date(d);
+                    return date.toLocaleString('id-ID', {
+                        year: 'numeric', month: 'short', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                };
+
+                const getSevClass = (s) => {
+                    if (s === 'CRITICAL') return 'sev-crt';
+                    if (s === 'HIGH') return 'sev-hgh';
+                    if (s === 'MEDIUM') return 'sev-med';
+                    return 'sev-low';
+                };
+
+                const getStatusClass = (s) => {
+                    if (s === 'RESOLVED') return 'status-resolved';
+                    if (s === 'INVESTIGATING') return 'status-investigating';
+                    return 'status-open'; // Default Open
+                };
+
+                const showToast = (msg, type = 'info') => {
+                    let bg = type === 'alert' ? "linear-gradient(to right, #ff5f6d, #ffc371)" : "linear-gradient(to right, #000, #004e92)";
+                    Toastify({ text: msg, duration: 3000, gravity: "top", position: "right", style: { background: bg, border: "1px solid var(--cyan)", color: type === 'alert' ? '#000' : "var(--cyan)", fontFamily: "Orbitron" } }).showToast();
+                };
+
+                // INIT
+                onMounted(() => {
+                    new Typed('#typed-output', { strings: ["ACCESSING DATABASE...", "ARCHIVE LINK ESTABLISHED"], typeSpeed: 30, backSpeed: 20, loop: true });
+                    fetchIncidents();
+                });
+
+                return {
+                    incidents, isLoading, isAnalyzing,
+                    searchQuery, filterSev, filterStatus,
+                    selectedIds, activeIncident,
+                    filteredIncidents, isAllSelected,
+                    fetchIncidents, deleteIncident, updateStatus, bulkResolve, analyzeIncident,
+                    toggleAll, openDetail, closeDetail,
+                    formatDate, getSevClass, getStatusClass
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

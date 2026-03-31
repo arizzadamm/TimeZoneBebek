@@ -1,0 +1,94 @@
+﻿<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>App Portal</title>
+    <link href='https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;500;700;900&display=swap' rel='stylesheet'>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    {{PRELOADER}}
+    <div class='scanlines'></div>
+    <div class='cyber-grid'></div>
+    {{SIDEBAR}}
+
+    <div class='container'>
+        <div class='header-box'>
+            <h1 class='page-title glitch' data-text='MISSION LAUNCHPAD'>MISSION LAUNCHPAD</h1>
+            <div style="color:#666; font-size:0.8rem;">SECURE GATEWAY</div>
+        </div>
+
+        <input type="text" id="app-search" class="portal-search" placeholder="SEARCH MODULES..." onkeyup="filterApps()">
+
+        <div id="app-container" class="app-grid">
+            <div style="color:#666;">Authenticating modules...</div>
+        </div>
+    </div>
+
+    <script>
+        let allApps = [];
+
+        // Mapping Icon berdasarkan Kategori (Emoji/Simbol)
+        const icons = {
+            'SEC': '🛡️',
+            'DEV': '💻',
+            'DATA': '📊',
+            'TOOL': '🛠️',
+            'DEFAULT': '🔗'
+        };
+
+        async function loadApps() {
+            try {
+                const res = await fetch('/api/portal-apps');
+                allApps = await res.json();
+                renderApps(allApps);
+            } catch (e) {
+                document.getElementById('app-container').innerHTML = "<div style='color:red'>FAILED TO LOAD APPS CONFIG</div>";
+            }
+        }
+
+        function renderApps(apps) {
+            const container = document.getElementById('app-container');
+            let html = '';
+
+            if (apps.length === 0) {
+                container.innerHTML = "<div style='color:#444; text-align:center; width:100%;'>NO MODULES FOUND</div>";
+                return;
+            }
+
+            apps.forEach(app => {
+                const cat = app.category ? app.category.toUpperCase() : 'DEFAULT';
+                const icon = icons[cat] || icons['DEFAULT'];
+
+                // Buat Kartu Link
+                html += `
+                    <a href="${app.url}" target="_blank" class="app-card cat-${cat}">
+                        <div class="app-link-icon">➜</div>
+                        <div>
+                            <div class="app-icon">${icon}</div>
+                            <div class="app-name">${app.name}</div>
+                        </div>
+                        <div class="app-desc">${app.description || "External Application"}</div>
+                    </a>
+                    `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Fitur Search Filter
+        function filterApps() {
+            const query = document.getElementById('app-search').value.toLowerCase();
+            const filtered = allApps.filter(app =>
+                app.name.toLowerCase().includes(query) ||
+                app.description.toLowerCase().includes(query) ||
+                app.category.toLowerCase().includes(query)
+            );
+            renderApps(filtered);
+        }
+
+        // Load saat start
+        loadApps();
+    </script>
+</body>
+</html>

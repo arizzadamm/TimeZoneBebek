@@ -1,0 +1,1241 @@
+﻿/* VARIABEL WARNA CYBERPUNK */
+:root {
+    --bg: #050505;
+    --panel: #111;
+    --border: #333;
+    --cyan: #00ffcc;
+    --yellow: #ffcc00;
+    --red: #ff3366;
+    --green: #00ff00;
+    --text: #ccc;
+}
+
+/* RESET & FONT */
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', sans-serif !important;
+    margin: 0;
+    overflow-x: hidden;
+}
+
+/* LAYOUT GLOBAL */
+.container {
+    padding: 80px 20px 20px 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 60px;
+    padding-bottom: 80px;
+}
+
+/* HEADER BRANDING */
+.header-box {
+    border-bottom: 2px solid var(--cyan);
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-bottom: 10px;
+    font-family: 'Orbitron', sans-serif !important;
+}
+
+.page-title {
+    font-family: 'Orbitron';
+    font-size: 2rem;
+    color: var(--cyan);
+    margin: 0;
+}
+
+.brand-header {
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #222;
+    width: 90%;
+    max-width: 800px;
+    padding-bottom: 15px;
+    font-family: 'Orbitron', sans-serif !important;
+}
+
+.brand-title {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--yellow);
+    letter-spacing: 2px;
+    margin: 0;
+}
+
+.brand-subtitle {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* SIDEBAR */
+.sidebar {
+    height: 100%;
+    width: 250px;
+    position: fixed;
+    z-index: 2000;
+    top: 0;
+    left: -250px;
+    background-color: #000;
+    border-right: 1px solid var(--cyan);
+    transition: 0.3s;
+    padding-top: 60px;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+}
+
+    .sidebar.open {
+        left: 0;
+    }
+
+    .sidebar a {
+        padding: 15px 25px;
+        text-decoration: none;
+        font-size: 1.1rem;
+        color: #888;
+        display: block;
+        transition: 0.2s;
+        border-bottom: 1px solid #222;
+    }
+
+        .sidebar a:hover {
+            color: var(--bg);
+            background: var(--cyan);
+        }
+
+        .sidebar a.active {
+            color: var(--cyan);
+            border-left: 5px solid var(--cyan);
+            background: #111;
+        }
+
+.menu-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--cyan);
+    z-index: 2001;
+    background: #000;
+    padding: 5px 10px;
+    border: 1px solid #333;
+    border-radius: 4px;
+}
+
+.overlay {
+    display: none;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 1999;
+}
+
+    .overlay.active {
+        display: block;
+    }
+
+/* PRELOADER (BEBEK) */
+#preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.8s ease-out;
+}
+
+.duck-loader {
+    font-size: 5rem;
+    filter: drop-shadow(0 0 20px var(--cyan));
+    animation: bounce 2s infinite alternate;
+}
+
+.loading-text {
+    margin-top: 20px;
+    color: var(--cyan);
+    font-size: 0.9rem;
+    letter-spacing: 3px;
+    animation: blink 0.5s infinite alternate;
+}
+
+/* ANIMASI & EFEK VISUAL */
+.scanlines {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+    background-size: 100% 4px;
+    z-index: 9000;
+    pointer-events: none;
+    animation: scrollScan 10s linear infinite;
+}
+
+.cyber-grid {
+    position: fixed;
+    bottom: -100px;
+    left: 0;
+    width: 100%;
+    height: 50vh;
+    background: linear-gradient(transparent 0%, rgba(0, 255, 204, 0.1) 2px, transparent 3px), linear-gradient(90deg, transparent 0%, rgba(0, 255, 204, 0.1) 2px, transparent 3px);
+    background-size: 40px 40px;
+    transform: perspective(500px) rotateX(60deg);
+    z-index: -1;
+    animation: gridMove 20s linear infinite;
+}
+
+    .cyber-grid::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to top, transparent, #050505 90%);
+    }
+
+.typing-text {
+    overflow: hidden;
+    border-right: 2px solid var(--cyan);
+    white-space: nowrap;
+    margin: 0 auto;
+    animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+    max-width: fit-content;
+}
+
+/* GLITCH EFFECT */
+.glitch {
+    position: relative;
+    color: var(--yellow);
+}
+
+    .glitch::before, .glitch::after {
+        content: attr(data-text);
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--bg);
+    }
+
+    .glitch::before {
+        left: 2px;
+        text-shadow: -1px 0 var(--red);
+        clip: rect(44px, 450px, 56px, 0);
+        animation: glitch-anim 5s infinite linear alternate-reverse;
+    }
+
+    .glitch::after {
+        left: -2px;
+        text-shadow: -1px 0 var(--cyan);
+        clip: rect(44px, 450px, 56px, 0);
+        animation: glitch-anim-2 5s infinite linear alternate-reverse;
+    }
+
+/* KOMPONEN UI (Card, Grid, Inspector) */
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+    width: 90%;
+    max-width: 800px;
+}
+
+.card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 15px;
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 255, 204, 0.2);
+        border-color: var(--cyan);
+    }
+
+    .card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: var(--cyan);
+    }
+
+    .card.alert::before {
+        background: var(--red);
+        animation: pulse 2s infinite;
+    }
+
+.label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: #666;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.value {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #fff;
+}
+
+/* INSPECTOR */
+.inspector {
+    width: 90%;
+    max-width: 800px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-top: 20px;
+    font-family: 'JetBrains Mono', monospace !important;
+}
+
+    .inspector summary {
+        padding: 15px;
+        cursor: pointer;
+        outline: none;
+        font-weight: bold;
+        color: var(--yellow);
+        list-style: none;
+        font-family: 'Orbitron', sans-serif !important;
+    }
+
+.header-content {
+    padding: 15px;
+    border-top: 1px solid var(--border);
+    font-size: 0.8rem;
+    max-height: 300px;
+    overflow-y: auto;
+    background: #000;
+}
+
+.row {
+    margin-bottom: 5px;
+    border-bottom: 1px dashed #222;
+    padding-bottom: 2px;
+}
+
+.key {
+    color: var(--cyan);
+}
+
+.val {
+    color: #fff;
+    word-break: break-all;
+    margin-left: 10px;
+}
+
+/* TICKER */
+.ticker-wrap {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background: #000;
+    border-top: 2px solid var(--red);
+    display: flex;
+    align-items: center;
+    z-index: 1500;
+}
+
+.ticker-label {
+    background: var(--red);
+    color: #fff;
+    font-weight: 900;
+    padding: 0 15px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    font-family: 'Orbitron';
+    font-size: 0.8rem;
+    z-index: 2;
+}
+
+.ticker {
+    display: flex;
+    white-space: nowrap;
+    animation: ticker-scroll 120s linear infinite;
+    padding-left: 100%;
+}
+
+.ticker-item {
+    padding: 0 30px;
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+    .ticker-item a {
+        color: #fff;
+        text-decoration: none;
+    }
+
+/* CLOCK */
+.time-section {
+    background: #0a0a0a;
+    border: 1px solid #222;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 25px;
+    width: 90%;
+    max-width: 800px;
+    box-sizing: border-box;
+    font-family: 'Orbitron', sans-serif !important;
+}
+
+.main-clock-box {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px dashed #333;
+}
+
+.clock-xl {
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: var(--cyan);
+    text-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+    margin: 0;
+}
+
+.sub-clock-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    text-align: center;
+}
+
+.sub-clock {
+    background: #111;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #222;
+}
+
+.clock-sm {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.label-sm {
+    font-size: 0.7rem;
+    color: #666;
+    font-weight: bold;
+}
+
+/* KEYFRAMES */
+@keyframes bounce {
+    from {
+        transform: translateY(0);
+    }
+
+    to {
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes blink {
+    from {
+        opacity: 0.3;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes scrollScan {
+    from {
+        background-position: 0 0;
+    }
+
+    to {
+        background-position: 0 100%;
+    }
+}
+
+@keyframes gridMove {
+    from {
+        background-position: 0 0;
+    }
+
+    to {
+        background-position: 0 500px;
+    }
+}
+
+@keyframes typing {
+    from {
+        width: 0
+    }
+
+    to {
+        width: 100%
+    }
+}
+
+@keyframes blink-caret {
+    from, to {
+        border-color: transparent
+    }
+
+    50% {
+        border-color: var(--cyan);
+    }
+}
+
+@keyframes ticker-scroll {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes glitch-anim {
+    0% {
+        clip: rect(30px, 9999px, 10px, 0);
+    }
+
+    100% {
+        clip: rect(20px, 9999px, 60px, 0);
+    }
+}
+/* Simplified for brevity */
+@keyframes glitch-anim-2 {
+    0% {
+        clip: rect(10px, 9999px, 80px, 0);
+    }
+
+    100% {
+        clip: rect(60px, 9999px, 50px, 0);
+    }
+}
+
+@media (max-width: 600px) {
+    .clock-xl {
+        font-size: 2.5rem;
+    }
+
+    .sub-clock-grid, .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+circle {
+    fill: none;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear;
+}
+
+/* Track (Garis tipis background) */
+/* Digital Time di tengah reactor */
+.reactor-time {
+    position: absolute;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+}
+
+.rt-main {
+    font-family: 'Orbitron';
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255,255,255,0.5);
+    line-height: 1;
+}
+
+.rt-sec {
+    font-size: 1rem;
+    color: var(--cyan);
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.rt-date {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 10px;
+    letter-spacing: 2px;
+}
+
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes spin-reverse {
+    100% {
+        transform: rotate(-360deg);
+    }
+}
+
+/* --- CYBER PROGRESS BAR --- */
+.prog-container {
+    width: 100%;
+    height: 10px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    margin-top: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.prog-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), #fff); /* Gradasi Cyan ke Putih */
+    box-shadow: 0 0 10px var(--cyan);
+    width: 0%; /* Diisi via JS/Style */
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+    /* Garis-garis miring di dalam bar (Stripes) */
+    .prog-fill::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient( 45deg, transparent, transparent 5px, rgba(0,0,0,0.5) 5px, rgba(0,0,0,0.5) 10px );
+    }
+/* Angka Persentase di kanan atas */
+.prog-text {
+    font-size: 0.8rem;
+    color: var(--yellow);
+    float: right;
+    margin-top: -20px;
+}
+/* --- HUD CORNER BRACKETS --- */
+.hud-card {
+    position: relative;
+    /* Pastikan background transparan atau gelap agar siku terlihat */
+    background: rgba(17, 17, 17, 0.7);
+    border: 1px solid rgba(0, 255, 204, 0.1); /* Border asli ditipiskan */
+}
+
+    /* Membuat 4 Siku menggunakan ::before dan ::after */
+    .hud-card::before, .hud-card::after {
+        content: '';
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border: 2px solid var(--cyan);
+        transition: all 0.3s;
+    }
+
+    .hud-card::before {
+        top: 0;
+        left: 0;
+        border-right: none;
+        border-bottom: none;
+    }
+    /* Kiri Atas */
+    .hud-card::after {
+        bottom: 0;
+        right: 0;
+        border-left: none;
+        border-top: none;
+    }
+    /* Kanan Bawah */
+
+    /* Hover Effect: Siku melebar */
+    .hud-card:hover::before, .hud-card:hover::after {
+        width: 100%;
+        height: 100%;
+        opacity: 0.5;
+    }
+.sonar-container {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+    border-radius: 50%;
+    border: 1px solid #333;
+    background: radial-gradient(circle, #002211 0%, #000 70%);
+    overflow: hidden;
+}
+
+.sonar-sweep {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 50%;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--green));
+    transform-origin: left center;
+    animation: sweep 2s linear infinite;
+    box-shadow: 0 0 10px var(--green);
+}
+
+.sonar-blip {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: var(--red);
+    border-radius: 50%;
+    top: 30px;
+    left: 70px;
+    animation: blip 2s infinite;
+    opacity: 0;
+}
+
+@keyframes sweep {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes blip {
+    0% {
+        opacity: 0;
+    }
+
+    40% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+/* --- INTEL CARD STYLES --- */
+.intel-box {
+    background: rgba(10, 10, 10, 0.95);
+    border: 1px solid #333;
+    border-left: 5px solid var(--yellow); /* Aksen Kuning Intelijen */
+    padding: 20px;
+    margin-top: 20px;
+    position: relative;
+    display: none; /* Sembunyi dulu sebelum ada data */
+    box-shadow: 0 0 20px rgba(0,0,0,0.8);
+}
+
+.intel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed #444;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.intel-title {
+    font-family: 'Orbitron';
+    font-size: 1.2rem;
+    color: var(--yellow);
+    letter-spacing: 2px;
+}
+
+/* Grid Data Rapi */
+.intel-data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.intel-row {
+    margin-bottom: 10px;
+}
+
+.intel-label {
+    font-size: 0.7rem;
+    color: #666;
+    text-transform: uppercase;
+    display: block;
+}
+
+.intel-value {
+    font-family: 'JetBrains Mono';
+    font-size: 1rem;
+    color: #fff;
+    border-bottom: 1px solid #222;
+    padding-bottom: 2px;
+    width: 100%;
+    display: inline-block;
+}
+
+/* Bendera Negara (CSS Only placeholder) */
+.flag-icon {
+    font-size: 2rem;
+    float: right;
+    filter: grayscale(0.5);
+}
+
+/* Efek Typing khusus Intel */
+.typing-fast {
+    overflow: hidden;
+    white-space: nowrap;
+    animation: typing 1s steps(40, end);
+}
+/* --- THREAT LOG TABLE --- */
+.threat-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+    .threat-table th {
+        text-align: left;
+        border-bottom: 2px solid var(--cyan);
+        padding: 10px;
+        color: var(--cyan);
+        font-family: 'Orbitron';
+        letter-spacing: 1px;
+    }
+
+    .threat-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #222;
+    }
+
+    .threat-table tr:hover {
+        background: rgba(0, 255, 204, 0.1); /* Highlight row saat hover */
+    }
+
+/* Animasi baris baru masuk */
+.row-animate {
+    animation: slideIn 0.5s ease-out;
+}
+
+/* Warna Severity berdasarkan jumlah hits */
+.lvl-high {
+    color: var(--red);
+    font-weight: bold;
+    text-shadow: 0 0 5px var(--red);
+}
+
+.lvl-med {
+    color: var(--yellow);
+}
+
+.lvl-low {
+    color: var(--green);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* --- NEW: CYBER ANALOG CLOCK --- */
+.analog-container {
+    position: relative;
+    width: 280px;
+    height: 280px; /* Ukuran sedikit lebih kecil dari reaktor */
+    margin: 0 auto 20px auto;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #0a0a0a 40%, #000 100%);
+    border: 3px solid #222;
+    box-shadow: 0 0 25px rgba(0, 255, 204, 0.15), inset 0 0 20px rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* Cincin Radar Berputar di Luar */
+.analog-ring-outer {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    border-radius: 50%;
+    border: 2px dashed var(--cyan);
+    opacity: 0.4;
+    animation: spin-slow 60s linear infinite;
+}
+
+/* Muka Jam (Dial & Angka) */
+.analog-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+/* Titik-titik Menit (Dibuat dengan gradient) */
+.analog-ticks {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.3) 0deg 0.5deg, transparent 0.5deg 6deg);
+    mask-image: radial-gradient(circle at center, transparent 65%, black 66%);
+    -webkit-mask-image: radial-gradient(circle at center, transparent 65%, black 66%);
+}
+
+/* Angka Utama 12, 3, 6, 9 */
+.analog-num {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    line-height: 30px;
+    font-family: 'Orbitron';
+    font-weight: bold;
+    color: var(--cyan);
+    font-size: 1.1rem;
+    text-shadow: 0 0 5px var(--cyan);
+}
+
+.n12 {
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.n3 {
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.n6 {
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.n9 {
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* --- JARUM JAM (HANDS) --- */
+/* Container pusat untuk jarum */
+.hand-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.hand {
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    transform-origin: bottom center; /* Titik putar di pangkal bawah */
+    border-radius: 2px;
+    box-shadow: 0 0 5px currentColor;
+    transition: transform 0.1s cubic-bezier(0.4, 2.08, 0.55, 0.44); /* Sedikit efek membal (bounce) */
+}
+
+.hand-hour {
+    width: 6px;
+    height: 60px;
+    background: #fff;
+    color: #fff;
+    margin-left: -3px;
+    z-index: 10;
+}
+    /* Hiasan pada jarum jam */
+    .hand-hour::after {
+        content: '';
+        position: absolute;
+        top: 10px;
+        left: 1px;
+        width: 4px;
+        height: 30px;
+        background: #000;
+    }
+
+.hand-min {
+    width: 4px;
+    height: 85px;
+    background: var(--cyan);
+    color: var(--cyan);
+    margin-left: -2px;
+    z-index: 11;
+}
+
+.hand-sec {
+    width: 2px;
+    height: 100px;
+    background: var(--red);
+    color: var(--red);
+    margin-left: -1px;
+    z-index: 12;
+    box-shadow: none; /* Detik tidak perlu shadow tebal */
+    transition: none !important; /* Detik bergerak linear tanpa bounce */
+}
+    /* Ekor jarum detik */
+    .hand-sec::before {
+        content: '';
+        position: absolute;
+        bottom: -20px;
+        width: 2px;
+        height: 20px;
+        background: var(--red);
+    }
+
+/* Titik Pusat (Hub) */
+.center-hub {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #fff;
+    z-index: 15;
+    border: 3px solid var(--bg); /* Lubang tengah */
+}
+
+@keyframes spin-slow {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+/* --- TITLE SWITCHER ANIMATION --- */
+
+/* Container untuk menumpuk judul */
+.title-switcher-container {
+    position: relative;
+    height: 50px; /* Sesuaikan tinggi agar tidak tumpang tindih dengan subtitle */
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Mencegah efek blur keluar container */
+}
+
+/* Style dasar untuk judul yang bisa berganti */
+.switching-title {
+    position: absolute; /* Agar bertumpuk di satu titik */
+    width: 100%;
+    margin: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1.2); /* Mulai sedikit besar */
+    opacity: 0; /* Mulai transparan */
+    filter: blur(15px); /* EFEK SAMAR-SAMAR (BLUR KUAT) */
+    transition: all 1.5s cubic-bezier(0.4, 0.0, 0.2, 1); /* Transisi halus (1.5 detik) */
+    pointer-events: none; /* Agar tidak mengganggu klik */
+}
+
+    /* Style saat judul AKTIF (Tajam) */
+    .switching-title.active {
+        opacity: 1; /* Terlihat penuh */
+        filter: blur(0px); /* BLUR HILANG (TAJAM) */
+        transform: translate(-50%, -50%) scale(1); /* Ukuran normal */
+        z-index: 10;
+    }
+
+/* Optional: Sedikit penyesuaian pada class .brand-header yg lama agar rapi */
+.brand-header {
+    padding-bottom: 5px; /* Kurangi padding bawah */
+}
+/* --- NEW: FUTURISTIC DATE HEADER (TOP) --- */
+.date-tracker {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px; /* Jarak ke jam analog */
+    font-family: 'JetBrains Mono', monospace; /* Font coding agar terlihat teknis */
+}
+
+.dt-box {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #333;
+    padding: 5px 15px;
+    color: var(--cyan);
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    position: relative;
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.1);
+}
+
+    /* Hiasan bracket [ ] di kiri kanan */
+    .dt-box::before {
+        content: '[';
+        margin-right: 10px;
+        color: #666;
+    }
+
+    .dt-box::after {
+        content: ']';
+        margin-left: 10px;
+        color: #666;
+    }
+
+/* Label Hari yang menyala */
+.dt-day {
+    color: var(--yellow);
+    font-weight: bold;
+    text-transform: uppercase;
+    text-shadow: 0 0 5px var(--yellow);
+}
+/* --- PORTAL LAUNCHPAD STYLES --- */
+.app-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Responsif */
+    gap: 25px;
+    padding: 20px 0;
+}
+
+.app-card {
+    background: rgba(15, 15, 15, 0.9);
+    border: 1px solid #333;
+    padding: 25px;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none; /* Hilangkan garis bawah link */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 150px;
+}
+
+    /* Warna Border Berdasarkan Kategori */
+    .app-card.cat-SEC {
+        border-left: 4px solid var(--red);
+    }
+
+    .app-card.cat-DEV {
+        border-left: 4px solid var(--yellow);
+    }
+
+    .app-card.cat-DATA {
+        border-left: 4px solid var(--cyan);
+    }
+
+    .app-card.cat-TOOL {
+        border-left: 4px solid #fff;
+    }
+
+    .app-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+        background: #1a1a1a;
+    }
+    /* Efek Glow saat hover sesuai kategori */
+    .app-card.cat-SEC:hover {
+        box-shadow: 0 0 20px rgba(255, 51, 102, 0.2);
+        border-color: var(--red);
+    }
+
+    .app-card.cat-DATA:hover {
+        box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+        border-color: var(--cyan);
+    }
+
+.app-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.app-name {
+    font-family: 'Orbitron';
+    font-size: 1.4rem;
+    color: #fff;
+    font-weight: 900;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+}
+
+.app-desc {
+    font-family: 'JetBrains Mono';
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.app-link-icon {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    color: #444;
+    transition: 0.3s;
+}
+
+.app-card:hover .app-link-icon {
+    color: #fff;
+    transform: rotate(-45deg);
+}
+
+/* Search Box Portal */
+.portal-search {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto 30px auto;
+    background: #000;
+    border: 1px solid var(--cyan);
+    color: #fff;
+    padding: 15px 25px;
+    font-family: 'Orbitron';
+    font-size: 1.1rem;
+    text-align: center;
+    transition: 0.3s;
+}
+
+    .portal-search:focus {
+        box-shadow: 0 0 20px rgba(0,255,204,0.3);
+        outline: none;
+    }
