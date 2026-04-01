@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using TimeZoneBebek.Models;
 using TimeZoneBebek.Services;
 
@@ -22,47 +22,82 @@ namespace TimeZoneBebek.Controllers
             return Ok(data);
         }
 
+        [HttpGet("summary")]
+        public async Task<IActionResult> GetSummary()
+        {
+            var summary = await _service.GetDashboardSummaryAsync();
+            return Ok(summary);
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Incident newInc)
         {
             var result = await _service.AddAsync(newInc);
-            if (!result.Success) return Conflict(new { message = result.Message });
+            if (!result.Success)
+                return BadRequest(new { message = result.Message });
+
             return Ok(new { message = result.Message, id = result.Id });
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] Incident updatedInc)
         {
-            var success = await _service.UpdateAsync(id, updatedInc);
-            if (!success) return NotFound(new { message = "Incident Not Found" });
-            return Ok(new { message = "Incident Updated" });
+            var result = await _service.UpdateAsync(id, updatedInc);
+            if (!result.Success)
+            {
+                if (string.Equals(result.Message, "Incident Not Found", StringComparison.OrdinalIgnoreCase))
+                    return NotFound(new { message = result.Message });
+
+                return BadRequest(new { message = result.Message });
+            }
+
+            return Ok(new { message = result.Message });
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
             var success = await _service.DeleteAsync(id);
-            if (!success) return NotFound(new { message = "Incident Not Found" });
+            if (!success)
+                return NotFound(new { message = "Incident Not Found" });
+
             return Ok(new { message = "Incident Deleted" });
         }
 
         [HttpPut("{id}/status")]
         public async Task<IActionResult> UpdateStatus(string id, [FromBody] string newStatus)
         {
-            if (!new[] { "OPEN", "RESOLVED", "INVESTIGATING" }.Contains(newStatus.ToUpper()))
+            var normalizedStatus = (newStatus ?? "").Trim().ToUpperInvariant();
+            if (!IncidentStatuses.All.Contains(normalizedStatus))
                 return BadRequest(new { message = "Invalid Status" });
 
-            var success = await _service.UpdateStatusAsync(id, newStatus);
-            if (!success) return NotFound(new { message = "Incident Not Found" });
+            var result = await _service.UpdateStatusAsync(id, normalizedStatus);
+            if (!result.Success)
+            {
+                if (string.Equals(result.Message, "Incident Not Found", StringComparison.OrdinalIgnoreCase))
+                    return NotFound(new { message = result.Message });
+
+                return BadRequest(new { message = result.Message });
+            }
+
             return Ok(new { message = "Status Updated" });
         }
 
         [HttpPut("bulk-status")]
         public async Task<IActionResult> BulkUpdateStatus([FromBody] BulkUpdateDto req)
         {
+            if (!IncidentStatuses.All.Contains((req.Status ?? "").Trim().ToUpperInvariant()))
+                return BadRequest(new { message = "Invalid Status" });
+
             var count = await _service.BulkUpdateStatusAsync(req);
             return Ok(new { message = $"{count} Incidents Updated" });
         }
+
+        [HttpGet("statuses")]
+        public IActionResult GetStatuses() => Ok(IncidentStatuses.All);
+
+        [HttpGet("workflow")]
+        public IActionResult GetWorkflow() => Ok(_service.GetWorkflowMetadata());
 
         [HttpPost("analyze/{id}")]
         public async Task<IActionResult> Analyze(string id)
@@ -71,7 +106,9 @@ namespace TimeZoneBebek.Controllers
                 return BadRequest(new { message = "Invalid ID" });
 
             var result = await _service.AnalyzeWithAiAsync(id);
-            if (!result.Success) return BadRequest(new { message = result.Analysis });
+            if (!result.Success)
+                return BadRequest(new { message = result.Analysis });
+
             return Ok(new { analysis = result.Analysis });
         }
     }

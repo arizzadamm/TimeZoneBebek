@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang='id'>
 <head>
     <meta charset='utf-8'>
@@ -6,9 +6,7 @@
     <title>INCIDENT ARCHIVE - Command Center</title>
 
     <script src="js/auth-guard.js"></script>
-
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-
     <script src="https://unpkg.com/typed.js@2.0.16/dist/typed.umd.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
@@ -18,17 +16,15 @@
     <link rel="stylesheet" href="/style.css">
 
     <style>
-        /* ARCHIVE SPECIFIC STYLES */
         .archive-container {
             width: 95%;
-            max-width: 1400px;
+            max-width: 1480px;
             margin: 20px auto;
             display: flex;
             flex-direction: column;
             gap: 20px;
         }
 
-        /* Toolbar (Filters & Actions) */
         .toolbar {
             display: flex;
             justify-content: space-between;
@@ -40,19 +36,19 @@
             gap: 15px;
         }
 
+        .filter-group, .action-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
         .filter-group {
-            display: flex;
-            gap: 10px;
             flex: 1;
-            min-width: 300px;
+            min-width: 320px;
         }
 
-        .action-group {
-            display: flex;
-            gap: 10px;
-        }
-
-        .cyber-input, .cyber-select {
+        .cyber-input, .cyber-select, .cyber-textarea {
             background: rgba(0,0,0,0.5);
             border: 1px solid var(--cyan);
             color: var(--cyan);
@@ -62,12 +58,17 @@
             transition: 0.3s;
         }
 
-            .cyber-input:focus, .cyber-select:focus {
-                box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
-            }
+        .cyber-input:focus, .cyber-select:focus, .cyber-textarea:focus {
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+        }
 
         .cyber-input {
             flex: 1;
+        }
+
+        .cyber-textarea {
+            min-height: 110px;
+            resize: vertical;
         }
 
         .cyber-btn {
@@ -78,37 +79,74 @@
             font-family: 'Orbitron';
             cursor: pointer;
             transition: 0.3s;
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 5px;
+            justify-content: center;
+            gap: 6px;
         }
 
-            .cyber-btn:hover:not(:disabled) {
-                background: var(--cyan);
-                color: #000;
-                box-shadow: 0 0 15px var(--cyan);
-            }
+        .cyber-btn:hover:not(:disabled) {
+            background: var(--cyan);
+            color: #000;
+            box-shadow: 0 0 15px var(--cyan);
+        }
 
-            .cyber-btn.btn-red {
-                border-color: var(--red);
-                color: var(--red);
-                background: rgba(255, 51, 102, 0.1);
-            }
+        .cyber-btn.btn-red {
+            border-color: var(--red);
+            color: var(--red);
+            background: rgba(255, 51, 102, 0.1);
+        }
 
-                .cyber-btn.btn-red:hover:not(:disabled) {
-                    background: var(--red);
-                    color: #fff;
-                    box-shadow: 0 0 15px var(--red);
-                }
+        .cyber-btn.btn-red:hover:not(:disabled) {
+            background: var(--red);
+            color: #fff;
+            box-shadow: 0 0 15px var(--red);
+        }
 
-            .cyber-btn:disabled {
-                border-color: #555;
-                color: #555;
-                cursor: not-allowed;
-                background: transparent;
-            }
+        .cyber-btn.btn-yellow {
+            border-color: var(--yellow);
+            color: var(--yellow);
+            background: rgba(255, 204, 0, 0.08);
+        }
 
-        /* Table Styles */
+        .cyber-btn.btn-yellow:hover:not(:disabled) {
+            background: var(--yellow);
+            color: #000;
+            box-shadow: 0 0 15px var(--yellow);
+        }
+
+        .cyber-btn:disabled {
+            border-color: #555;
+            color: #555;
+            cursor: not-allowed;
+            background: transparent;
+        }
+
+        .status-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .mini-card {
+            background: rgba(0,0,0,0.55);
+            border: 1px solid rgba(0,255,204,0.22);
+            padding: 12px;
+        }
+
+        .mini-card .label {
+            display: block;
+            color: #888;
+            font-size: 0.68rem;
+            letter-spacing: 1px;
+        }
+
+        .mini-card .value {
+            font-family: 'Orbitron';
+            font-size: 1.35rem;
+            color: var(--cyan);
+        }
+
         .table-wrapper {
             overflow-x: auto;
             background: rgba(0,0,0,0.6);
@@ -121,24 +159,24 @@
             font-size: 0.85rem;
         }
 
-            .cyber-table th {
-                background: rgba(0, 255, 204, 0.1);
-                color: var(--cyan);
-                padding: 12px;
-                text-align: left;
-                font-family: 'Orbitron';
-                border-bottom: 2px solid var(--cyan);
-            }
+        .cyber-table th {
+            background: rgba(0, 255, 204, 0.1);
+            color: var(--cyan);
+            padding: 12px;
+            text-align: left;
+            font-family: 'Orbitron';
+            border-bottom: 2px solid var(--cyan);
+        }
 
-            .cyber-table td {
-                padding: 12px;
-                border-bottom: 1px solid #222;
-                vertical-align: middle;
-            }
+        .cyber-table td {
+            padding: 12px;
+            border-bottom: 1px solid #222;
+            vertical-align: middle;
+        }
 
-            .cyber-table tbody tr:hover {
-                background: rgba(0, 255, 204, 0.05);
-            }
+        .cyber-table tbody tr:hover {
+            background: rgba(0, 255, 204, 0.05);
+        }
 
         .badge {
             padding: 3px 8px;
@@ -162,27 +200,27 @@
             color: #fff;
         }
 
-        /* Detail Modal */
         .detail-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.82);
             z-index: 1000;
             display: flex;
             justify-content: center;
             align-items: center;
             backdrop-filter: blur(5px);
+            padding: 18px;
+            box-sizing: border-box;
         }
 
         .detail-modal {
             background: #0a0a0a;
             border: 1px solid var(--cyan);
-            width: 90%;
-            max-width: 800px;
-            max-height: 90vh;
+            width: min(1180px, 100%);
+            max-height: 92vh;
             display: flex;
             flex-direction: column;
             box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);
@@ -216,6 +254,12 @@
             padding: 20px;
             overflow-y: auto;
             flex: 1;
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.9fr);
+            gap: 20px;
+        }
+
+        .detail-column {
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -223,7 +267,7 @@
 
         .detail-row {
             display: grid;
-            grid-template-columns: 120px 1fr;
+            grid-template-columns: 130px 1fr;
             gap: 10px;
             border-bottom: 1px dashed #333;
             padding-bottom: 10px;
@@ -239,28 +283,97 @@
             color: #fff;
         }
 
-        .ai-box {
-            background: rgba(0, 20, 20, 0.5);
-            border: 1px dashed var(--yellow);
-            padding: 15px;
+        .panel-box {
+            background: rgba(0, 20, 20, 0.4);
+            border: 1px solid rgba(0,255,204,0.3);
+            padding: 14px;
             border-radius: 4px;
-            margin-top: 10px;
         }
 
-        .ai-title {
-            color: var(--yellow);
+        .panel-box h3 {
+            margin: 0 0 12px;
+            color: var(--cyan);
             font-family: 'Orbitron';
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            font-size: 0.95rem;
         }
 
-        .ai-content {
-            white-space: pre-wrap;
+        .workflow-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .audit-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        .audit-item {
+            border-left: 2px solid rgba(0,255,204,0.4);
+            padding-left: 10px;
+            font-size: 0.78rem;
+            color: #d9e7e4;
+        }
+
+        .audit-item strong {
+            color: var(--cyan);
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-field label {
+            color: #9ac4bc;
+            font-size: 0.72rem;
+            letter-spacing: 1px;
+            font-family: 'Orbitron';
+        }
+
+        .form-field.full {
+            grid-column: 1 / -1;
+        }
+
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(0,255,204,0.28);
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            color: #d5ffff;
+        }
+
+        .tag-chip button {
+            background: none;
+            border: none;
+            color: var(--red);
+            cursor: pointer;
             font-size: 0.85rem;
-            color: #ddd;
-            line-height: 1.5;
+        }
+
+        @media (max-width: 980px) {
+            .detail-body {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -277,10 +390,43 @@
         </div>
 
         <div class="archive-container">
+            <div class="toolbar">
+                <div style="color:#aaa; font-size:0.8rem;">
+                    {{ hasSession ? `SESSION ACTIVE UNTIL ${sessionExpiryLabel}` : 'NO ACTIVE SESSION. ENTER ACCESS KEY TO CONTINUE.' }}
+                </div>
+                <div class="action-group">
+                    <input v-if="!hasSession" type="password" class="cyber-input" style="min-width:220px;" placeholder="Enter access key" v-model="sessionKeyInput">
+                    <button v-if="!hasSession" class="cyber-btn" @click="loginSession">
+                        <i class="fas fa-key"></i> START SESSION
+                    </button>
+                    <button v-else class="cyber-btn btn-red" @click="logoutSession">
+                        <i class="fas fa-right-from-bracket"></i> LOGOUT
+                    </button>
+                </div>
+            </div>
+
+            <div class="status-summary">
+                <div class="mini-card">
+                    <span class="label">OPEN</span>
+                    <div class="value">{{ openIncidentCount }}</div>
+                </div>
+                <div class="mini-card">
+                    <span class="label">CRITICAL</span>
+                    <div class="value" style="color:var(--red)">{{ criticalIncidentCount }}</div>
+                </div>
+                <div class="mini-card">
+                    <span class="label">ASSIGNED</span>
+                    <div class="value">{{ assignedIncidentCount }}</div>
+                </div>
+                <div class="mini-card">
+                    <span class="label">RESOLVED</span>
+                    <div class="value" style="color:var(--green)">{{ resolvedIncidentCount }}</div>
+                </div>
+            </div>
 
             <div class="toolbar">
                 <div class="filter-group">
-                    <input type="text" class="cyber-input" placeholder="Search title, attacker, or ID..." v-model="searchQuery">
+                    <input type="text" class="cyber-input" placeholder="Search title, attacker, ID, owner, or asset..." v-model="searchQuery">
                     <select class="cyber-select" v-model="filterSev">
                         <option value="ALL">ALL SEVERITY</option>
                         <option value="CRITICAL">CRITICAL</option>
@@ -290,12 +436,13 @@
                     </select>
                     <select class="cyber-select" v-model="filterStatus">
                         <option value="ALL">ALL STATUS</option>
-                        <option value="OPEN">OPEN</option>
-                        <option value="INVESTIGATING">INVESTIGATING</option>
-                        <option value="RESOLVED">RESOLVED</option>
+                        <option v-for="status in workflowStatuses" :key="status" :value="status">{{ status }}</option>
                     </select>
                 </div>
                 <div class="action-group">
+                    <button class="cyber-btn btn-yellow" @click="openCreateForm">
+                        <i class="fas fa-plus"></i> NEW INCIDENT
+                    </button>
                     <button class="cyber-btn" @click="fetchIncidents" title="Refresh Data">
                         <i class="fas fa-sync-alt" :class="{ 'fa-spin': isLoading }"></i> REFRESH
                     </button>
@@ -315,19 +462,20 @@
                             <th width="150">DATE / TIME</th>
                             <th width="100">SEVERITY</th>
                             <th>INCIDENT TITLE</th>
+                            <th width="150">OWNER</th>
+                            <th width="140">STATUS</th>
                             <th width="150">ATTACKER</th>
-                            <th width="120">STATUS</th>
-                            <th width="150" style="text-align:center;">ACTIONS</th>
+                            <th width="160" style="text-align:center;">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="isLoading && incidents.length === 0">
-                            <td colspan="7" style="text-align:center; padding: 30px; color: var(--cyan);">
+                            <td colspan="8" style="text-align:center; padding: 30px; color: var(--cyan);">
                                 <i class="fas fa-circle-notch fa-spin fa-2x"></i><br><br>FETCHING ARCHIVE...
                             </td>
                         </tr>
                         <tr v-else-if="filteredIncidents.length === 0">
-                            <td colspan="7" style="text-align:center; padding: 30px; color: #666;">
+                            <td colspan="8" style="text-align:center; padding: 30px; color: #666;">
                                 NO INCIDENTS MATCHING YOUR CRITERIA
                             </td>
                         </tr>
@@ -337,16 +485,20 @@
                             </td>
                             <td style="color:#aaa;">{{ formatDate(inc.date) }}</td>
                             <td :class="getSevClass(inc.severity)">{{ inc.severity }}</td>
-                            <td style="color:#fff;">{{ inc.title }}</td>
-                            <td style="color:#ccc; font-family:monospace;">{{ inc.attacker }}</td>
+                            <td style="color:#fff;">
+                                {{ inc.title }}
+                                <div style="color:#777; font-size:0.72rem;">{{ inc.affectedAsset || inc.source || 'No asset/source' }}</div>
+                            </td>
+                            <td style="color:#d0fff7;">{{ inc.owner || 'UNASSIGNED' }}</td>
                             <td><span :class="getStatusClass(inc.status)" class="badge">{{ inc.status }}</span></td>
+                            <td style="color:#ccc; font-family:monospace;">{{ inc.attacker }}</td>
                             <td style="text-align:center;">
                                 <div style="display:flex; gap:5px; justify-content:center;">
                                     <button class="cyber-btn" style="padding:5px 8px; font-size:0.7rem;" @click="openDetail(inc)" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="cyber-btn" style="padding:5px 8px; font-size:0.7rem;" v-if="inc.status !== 'RESOLVED'" @click="updateStatus(inc.id, 'RESOLVED')" title="Mark as Resolved">
-                                        <i class="fas fa-check"></i>
+                                    <button class="cyber-btn btn-yellow" style="padding:5px 8px; font-size:0.7rem;" @click="openEditForm(inc)" title="Edit Incident">
+                                        <i class="fas fa-pen"></i>
                                     </button>
                                     <button class="cyber-btn btn-red" style="padding:5px 8px; font-size:0.7rem;" @click="deleteIncident(inc.id)" title="Delete Record">
                                         <i class="fas fa-trash"></i>
@@ -361,238 +513,179 @@
             <div style="text-align:right; color:#666; font-size:0.8rem;">
                 SHOWING {{ filteredIncidents.length }} OF {{ incidents.length }} RECORDS
             </div>
+        </div>
 
-        </div> <div class="detail-overlay" v-if="activeIncident" @click.self="closeDetail">
+        <div class="detail-overlay" v-if="activeIncident" @click.self="closeDetail">
             <div class="detail-modal">
                 <div class="detail-header">
                     <h2 class="detail-title">INCIDENT INTEL: {{ activeIncident.id }}</h2>
                     <button class="close-btn" @click="closeDetail"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="detail-body">
-                    <div class="detail-row"><div class="detail-label">TITLE</div><div class="detail-val" style="color:var(--cyan); font-weight:bold;">{{ activeIncident.title }}</div></div>
-                    <div class="detail-row"><div class="detail-label">TIMESTAMP</div><div class="detail-val">{{ formatDate(activeIncident.date) }}</div></div>
-                    <div class="detail-row"><div class="detail-label">SEVERITY</div><div class="detail-val" :class="getSevClass(activeIncident.severity)">{{ activeIncident.severity }}</div></div>
-                    <div class="detail-row"><div class="detail-label">STATUS</div><div class="detail-val"><span :class="getStatusClass(activeIncident.status)" class="badge">{{ activeIncident.status }}</span></div></div>
-                    <div class="detail-row"><div class="detail-label">THREAT ACTOR</div><div class="detail-val" style="font-family:monospace;">{{ activeIncident.attacker }}</div></div>
-                    <div class="detail-row"><div class="detail-label">SUMMARY</div><div class="detail-val">{{ activeIncident.summary }}</div></div>
-                    <div class="detail-row">
-                        <div class="detail-label">TAGS</div>
-                        <div class="detail-val" style="display:flex; gap:5px; flex-wrap:wrap;">
-                            <span v-for="tag in activeIncident.tags" :key="tag" style="background:#333; padding:2px 8px; border-radius:10px; font-size:0.75rem;">#{{ tag }}</span>
+                    <div class="detail-column">
+                        <div class="detail-row"><div class="detail-label">TITLE</div><div class="detail-val" style="color:var(--cyan); font-weight:bold;">{{ activeIncident.title }}</div></div>
+                        <div class="detail-row"><div class="detail-label">TIMESTAMP</div><div class="detail-val">{{ formatDate(activeIncident.date) }}</div></div>
+                        <div class="detail-row"><div class="detail-label">SEVERITY</div><div class="detail-val" :class="getSevClass(activeIncident.severity)">{{ activeIncident.severity }}</div></div>
+                        <div class="detail-row"><div class="detail-label">STATUS</div><div class="detail-val"><span :class="getStatusClass(activeIncident.status)" class="badge">{{ activeIncident.status }}</span></div></div>
+                        <div class="detail-row"><div class="detail-label">OWNER</div><div class="detail-val">{{ activeIncident.owner || 'UNASSIGNED' }}</div></div>
+                        <div class="detail-row"><div class="detail-label">THREAT ACTOR</div><div class="detail-val" style="font-family:monospace;">{{ activeIncident.attacker }}</div></div>
+                        <div class="detail-row"><div class="detail-label">SOURCE</div><div class="detail-val">{{ activeIncident.source || 'UNSPECIFIED' }}</div></div>
+                        <div class="detail-row"><div class="detail-label">ASSET</div><div class="detail-val">{{ activeIncident.affectedAsset || 'UNSPECIFIED' }}</div></div>
+                        <div class="detail-row"><div class="detail-label">FIRST/LAST</div><div class="detail-val">{{ formatDate(activeIncident.firstSeen || activeIncident.date) }} / {{ formatDate(activeIncident.lastSeen || activeIncident.date) }}</div></div>
+                        <div class="panel-box">
+                            <h3>SUMMARY</h3>
+                            <div style="white-space:pre-wrap; color:#d7e7e3; font-size:0.85rem;">{{ activeIncident.summary }}</div>
+                        </div>
+                        <div class="panel-box" v-if="activeIncident.resolutionNote">
+                            <h3>RESOLUTION NOTE</h3>
+                            <div style="white-space:pre-wrap; color:#d7ffe9; font-size:0.82rem;">{{ activeIncident.resolutionNote }}</div>
+                        </div>
+                        <div class="panel-box">
+                            <h3>TAGS</h3>
+                            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                <span v-if="!(activeIncident.tags || []).length" style="color:#666;">No tags</span>
+                                <span v-for="tag in activeIncident.tags || []" :key="tag" class="tag-chip">#{{ tag }}</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="ai-box">
-                        <div class="ai-title">
-                            <i class="fas fa-brain"></i> AI THREAT ANALYSIS
-                            <button v-if="!activeIncident.aiAnalysis" class="cyber-btn" style="margin-left:auto; font-size:0.7rem; padding:4px 8px;" @click="analyzeIncident" :disabled="isAnalyzing">
-                                <span v-if="isAnalyzing"><i class="fas fa-spinner fa-spin"></i> ANALYZING...</span>
-                                <span v-else>RUN ANALYSIS</span>
-                            </button>
+                    <div class="detail-column">
+                        <div class="panel-box">
+                            <h3>WORKFLOW CONSOLE</h3>
+                            <div class="form-field">
+                                <label>ASSIGN OWNER</label>
+                                <input class="cyber-input" v-model="workflowDraft.owner" list="owner-options" placeholder="SOC analyst / team">
+                            </div>
+                            <div class="form-field" style="margin-top:12px;">
+                                <label>ALLOWED STATUS TRANSITIONS</label>
+                                <div class="workflow-actions">
+                                    <button v-for="status in allowedTransitions" :key="status" class="cyber-btn" @click="transitionIncident(status)">
+                                        {{ status }}
+                                    </button>
+                                    <span v-if="allowedTransitions.length === 0" style="color:#666;">No transition available</span>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:10px; margin-top:14px;">
+                                <button class="cyber-btn" style="flex:1;" @click="saveAssignment">
+                                    <i class="fas fa-user-check"></i> SAVE OWNER
+                                </button>
+                                <button class="cyber-btn btn-yellow" style="flex:1;" @click="openEditForm(activeIncident)">
+                                    <i class="fas fa-pen"></i> FULL EDIT
+                                </button>
+                            </div>
                         </div>
-                        <div class="ai-content" v-if="activeIncident.aiAnalysis">{{ activeIncident.aiAnalysis }}</div>
-                        <div class="ai-content" v-else-if="isAnalyzing" style="color:#888;">AI is processing the incident telemetry. Please wait...</div>
-                        <div class="ai-content" v-else style="color:#666;">No AI analysis available for this incident. Run analysis to generate insights.</div>
+
+                        <div class="panel-box">
+                            <h3>AUDIT TRAIL</h3>
+                            <div class="audit-list">
+                                <div v-if="!(activeIncident.auditTrail || []).length" style="color:#666;">No audit trail yet</div>
+                                <div v-for="entry in activeIncident.auditTrail || []" :key="`${entry.timestampUtc}-${entry.action}-${entry.message}`" class="audit-item">
+                                    <div><strong>{{ entry.action }}</strong>{{ entry.message }}</div>
+                                    <div style="color:#7c9993; font-size:0.7rem;">{{ formatAuditDate(entry.timestampUtc) }} · {{ entry.actor }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel-box">
+                            <div class="ai-title">
+                                <i class="fas fa-brain"></i> AI THREAT ANALYSIS
+                                <button v-if="!activeIncident.aiAnalysis" class="cyber-btn" style="margin-left:auto; font-size:0.7rem; padding:4px 8px;" @click="analyzeIncident" :disabled="isAnalyzing">
+                                    <span v-if="isAnalyzing"><i class="fas fa-spinner fa-spin"></i> ANALYZING...</span>
+                                    <span v-else>RUN ANALYSIS</span>
+                                </button>
+                            </div>
+                            <div class="ai-content" v-if="activeIncident.aiAnalysis">{{ activeIncident.aiAnalysis }}</div>
+                            <div class="ai-content" v-else-if="isAnalyzing" style="color:#888;">AI is processing the incident telemetry. Please wait...</div>
+                            <div class="ai-content" v-else style="color:#666;">No AI analysis available for this incident. Run analysis to generate insights.</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <div class="detail-overlay" v-if="showFormModal" @click.self="closeForm">
+            <div class="detail-modal">
+                <div class="detail-header">
+                    <h2 class="detail-title">{{ formMode === 'create' ? 'CREATE INCIDENT' : `EDIT INCIDENT: ${form.id || ''}` }}</h2>
+                    <button class="close-btn" @click="closeForm"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="detail-body" style="grid-template-columns:1fr;">
+                    <div class="form-grid">
+                        <div class="form-field full">
+                            <label>TITLE</label>
+                            <input class="cyber-input" v-model="form.title" maxlength="140">
+                        </div>
+                        <div class="form-field">
+                            <label>SEVERITY</label>
+                            <select class="cyber-select" v-model="form.severity">
+                                <option v-for="severity in severities" :key="severity" :value="severity">{{ severity }}</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label>STATUS</label>
+                            <select class="cyber-select" v-model="form.status">
+                                <option v-for="status in formStatusOptions" :key="status" :value="status">{{ status }}</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label>ATTACKER</label>
+                            <input class="cyber-input" v-model="form.attacker" maxlength="120" placeholder="IP / host / actor">
+                        </div>
+                        <div class="form-field">
+                            <label>OWNER</label>
+                            <input class="cyber-input" v-model="form.owner" list="owner-options" placeholder="SOC analyst / team">
+                        </div>
+                        <div class="form-field">
+                            <label>SOURCE</label>
+                            <input class="cyber-input" v-model="form.source" placeholder="Elastic / Wazuh / User report">
+                        </div>
+                        <div class="form-field">
+                            <label>AFFECTED ASSET</label>
+                            <input class="cyber-input" v-model="form.affectedAsset" placeholder="hostname / app / service">
+                        </div>
+                        <div class="form-field">
+                            <label>FIRST SEEN</label>
+                            <input class="cyber-input" type="datetime-local" v-model="form.firstSeenLocal">
+                        </div>
+                        <div class="form-field">
+                            <label>LAST SEEN</label>
+                            <input class="cyber-input" type="datetime-local" v-model="form.lastSeenLocal">
+                        </div>
+                        <div class="form-field full">
+                            <label>SUMMARY</label>
+                            <textarea class="cyber-textarea" v-model="form.summary" maxlength="2000"></textarea>
+                        </div>
+                        <div class="form-field full">
+                            <label>RESOLUTION NOTE</label>
+                            <textarea class="cyber-textarea" v-model="form.resolutionNote" placeholder="Required when resolving or closing an incident."></textarea>
+                        </div>
+                        <div class="form-field full">
+                            <label>TAGS</label>
+                            <div style="display:flex; gap:10px;">
+                                <input class="cyber-input" v-model="tagDraft" placeholder="Add tag and press enter" @keyup.enter.prevent="addTag">
+                                <button class="cyber-btn" type="button" @click="addTag">ADD TAG</button>
+                            </div>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                                <span v-for="tag in form.tags" :key="tag" class="tag-chip">#{{ tag }} <button type="button" @click="removeTag(tag)">&times;</button></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; justify-content:flex-end;">
+                        <button class="cyber-btn" @click="closeForm">CANCEL</button>
+                        <button class="cyber-btn btn-yellow" @click="submitForm" :disabled="isSavingForm">
+                            <i class="fas" :class="isSavingForm ? 'fa-circle-notch fa-spin' : 'fa-floppy-disk'"></i>
+                            {{ formMode === 'create' ? 'CREATE INCIDENT' : 'SAVE CHANGES' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <datalist id="owner-options">
+            <option v-for="owner in knownOwners" :key="owner" :value="owner">{{ owner }}</option>
+        </datalist>
     </div>
-    <script>
-        const { createApp, ref, computed, onMounted } = Vue;
 
-        createApp({
-            setup() {
-                // State Variables
-                const incidents = ref([]);
-                const isLoading = ref(false);
-                const isAnalyzing = ref(false);
-
-                // Filters
-                const searchQuery = ref("");
-                const filterSev = ref("ALL");
-                const filterStatus = ref("ALL");
-
-                // Selections & Modal
-                const selectedIds = ref([]);
-                const activeIncident = ref(null);
-
-                // ==========================================
-                // COMPUTED PROPERTIES (REAL-TIME FILTERING)
-                // ==========================================
-                const filteredIncidents = computed(() => {
-                    return incidents.value.filter(inc => {
-                        // 1. Match Search
-                        const q = searchQuery.value.toLowerCase();
-                        const matchSearch = !q ||
-                            inc.title.toLowerCase().includes(q) ||
-                            inc.attacker.toLowerCase().includes(q) ||
-                            inc.id.toLowerCase().includes(q);
-
-                        // 2. Match Severity
-                        const matchSev = filterSev.value === "ALL" || inc.severity === filterSev.value;
-
-                        // 3. Match Status
-                        const matchStatus = filterStatus.value === "ALL" || inc.status === filterStatus.value;
-
-                        return matchSearch && matchSev && matchStatus;
-                    });
-                });
-
-                const isAllSelected = computed(() => {
-                    return filteredIncidents.value.length > 0 &&
-                        selectedIds.value.length === filteredIncidents.value.length;
-                });
-
-                // ==========================================
-                // METHODS (API CALLS)
-                // ==========================================
-                const fetchIncidents = async () => {
-                    isLoading.value = true;
-                    try {
-                        const res = await fetch('/api/incidents', { headers: { 'X-API-KEY': API_KEY } });
-                        if (res.ok) {
-                            incidents.value = await res.json();
-                        }
-                    } catch (e) {
-                        showToast("Failed to fetch database", "alert");
-                    } finally {
-                        isLoading.value = false;
-                    }
-                };
-
-                const deleteIncident = async (id) => {
-                    if (!confirm(`WARNING: Are you sure you want to permanently delete incident ${id}?`)) return;
-                    try {
-                        const res = await fetch(`/api/incidents/${id}`, {
-                            method: 'DELETE', headers: { 'X-API-KEY': API_KEY }
-                        });
-                        if (res.ok) {
-                            showToast("Record Deleted", "cyber");
-                            incidents.value = incidents.value.filter(i => i.id !== id);
-                            // Remove from selection if deleted
-                            selectedIds.value = selectedIds.value.filter(selectedId => selectedId !== id);
-                        }
-                    } catch (e) { showToast("Delete failed", "alert"); }
-                };
-
-                const updateStatus = async (id, newStatus) => {
-                    try {
-                        const res = await fetch(`/api/incidents/${id}/status`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json', 'X-API-KEY': API_KEY },
-                            body: JSON.stringify(newStatus)
-                        });
-                        if (res.ok) {
-                            showToast(`Status Updated to ${newStatus}`, "cyber");
-                            const index = incidents.value.findIndex(i => i.id === id);
-                            if (index !== -1) incidents.value[index].status = newStatus;
-                        }
-                    } catch (e) { showToast("Update failed", "alert"); }
-                };
-
-                const bulkResolve = async () => {
-                    if (!confirm(`Mark ${selectedIds.value.length} incidents as RESOLVED?`)) return;
-                    try {
-                        const res = await fetch(`/api/incidents/bulk-status`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json', 'X-API-KEY': API_KEY },
-                            body: JSON.stringify({ ids: selectedIds.value, status: 'RESOLVED' })
-                        });
-                        if (res.ok) {
-                            showToast(`Batch Update Successful`, "cyber");
-                            // Update local data
-                            selectedIds.value.forEach(id => {
-                                const item = incidents.value.find(i => i.id === id);
-                                if (item) item.status = 'RESOLVED';
-                            });
-                            selectedIds.value = []; // Clear selection
-                        }
-                    } catch (e) { showToast("Batch update failed", "alert"); }
-                };
-
-                const analyzeIncident = async () => {
-                    if (!activeIncident.value) return;
-                    isAnalyzing.value = true;
-                    try {
-                        const res = await fetch(`/api/incidents/analyze/${activeIncident.value.id}`, {
-                            method: 'POST', headers: { 'X-API-KEY': API_KEY }
-                        });
-                        const data = await res.json();
-                        if (res.ok) {
-                            showToast("AI Analysis Complete", "cyber");
-                            activeIncident.value.aiAnalysis = data.analysis;
-                            // Update in list
-                            const item = incidents.value.find(i => i.id === activeIncident.value.id);
-                            if (item) item.aiAnalysis = data.analysis;
-                        } else {
-                            throw new Error(data.message || "Analysis Failed");
-                        }
-                    } catch (e) {
-                        showToast(e.message, "alert");
-                    } finally {
-                        isAnalyzing.value = false;
-                    }
-                };
-
-                // ==========================================
-                // UTILITIES & UI METHODS
-                // ==========================================
-                const toggleAll = (e) => {
-                    if (e.target.checked) {
-                        selectedIds.value = filteredIncidents.value.map(i => i.id);
-                    } else {
-                        selectedIds.value = [];
-                    }
-                };
-
-                const openDetail = (inc) => { activeIncident.value = inc; };
-                const closeDetail = () => { activeIncident.value = null; };
-
-                const formatDate = (d) => {
-                    const date = new Date(d);
-                    return date.toLocaleString('id-ID', {
-                        year: 'numeric', month: 'short', day: '2-digit',
-                        hour: '2-digit', minute: '2-digit'
-                    });
-                };
-
-                const getSevClass = (s) => {
-                    if (s === 'CRITICAL') return 'sev-crt';
-                    if (s === 'HIGH') return 'sev-hgh';
-                    if (s === 'MEDIUM') return 'sev-med';
-                    return 'sev-low';
-                };
-
-                const getStatusClass = (s) => {
-                    if (s === 'RESOLVED') return 'status-resolved';
-                    if (s === 'INVESTIGATING') return 'status-investigating';
-                    return 'status-open'; // Default Open
-                };
-
-                const showToast = (msg, type = 'info') => {
-                    let bg = type === 'alert' ? "linear-gradient(to right, #ff5f6d, #ffc371)" : "linear-gradient(to right, #000, #004e92)";
-                    Toastify({ text: msg, duration: 3000, gravity: "top", position: "right", style: { background: bg, border: "1px solid var(--cyan)", color: type === 'alert' ? '#000' : "var(--cyan)", fontFamily: "Orbitron" } }).showToast();
-                };
-
-                // INIT
-                onMounted(() => {
-                    new Typed('#typed-output', { strings: ["ACCESSING DATABASE...", "ARCHIVE LINK ESTABLISHED"], typeSpeed: 30, backSpeed: 20, loop: true });
-                    fetchIncidents();
-                });
-
-                return {
-                    incidents, isLoading, isAnalyzing,
-                    searchQuery, filterSev, filterStatus,
-                    selectedIds, activeIncident,
-                    filteredIncidents, isAllSelected,
-                    fetchIncidents, deleteIncident, updateStatus, bulkResolve, analyzeIncident,
-                    toggleAll, openDetail, closeDetail,
-                    formatDate, getSevClass, getStatusClass
-                };
-            }
-        }).mount('#app');
-    </script>
+    <script src="/js/archive-app.js"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
-﻿using System.Net.Http.Headers;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
+using TimeZoneBebek.Models;
 
 namespace TimeZoneBebek.Services
 {
@@ -9,60 +9,88 @@ namespace TimeZoneBebek.Services
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<ElasticEpsService> _logger;
-        private const string ElasticUrl = "https://10.2.132.61:9200/.alerts-security.alerts-default,filebeat-*/_count";
+        private readonly MonitoringState _monitoringState;
+        private readonly string _elasticUrl;
 
-        public ElasticEpsService(ILogger<ElasticEpsService> logger)
+        public ElasticEpsService(ILogger<ElasticEpsService> logger, IConfiguration configuration, MonitoringState monitoringState)
         {
             _logger = logger;
+            _monitoringState = monitoringState;
 
-            // Bypass SSL untuk IP Lokal
-            var handler = new HttpClientHandler
-            {
-                ServerCertificateCustomValidationCallback = (m, c, ch, e) => true
-            };
+            var elasticConfig = configuration.GetSection("ElasticConfig").Get<ElasticConfig>() ?? new ElasticConfig();
+            _elasticUrl = $"{elasticConfig.Url.TrimEnd('/')}/{elasticConfig.IndexPattern}/_count";
+
+            var handler = new HttpClientHandler();
+            if (elasticConfig.AllowInvalidCertificate)
+                handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
+
             _httpClient = new HttpClient(handler);
 
-            // Konfigurasi Kredensial
-            var authString = Convert.ToBase64String(Encoding.ASCII.GetBytes("Ariza:Suropati02"));
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authString);
+            if (!string.IsNullOrWhiteSpace(elasticConfig.Username) && !string.IsNullOrWhiteSpace(elasticConfig.Password))
+            {
+                var authString = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{elasticConfig.Username}:{elasticConfig.Password}"));
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authString);
+            }
         }
 
-        public async Task<int> GetCurrentEpsAsync()
+        public async Task<EpsSnapshot> GetCurrentEpsAsync()
         {
             try
             {
-                // Query API _count untuk menghitung log 1 detik terakhir
-                var queryJson = """
-                { 
-                    "query": { 
-                        "range": { 
-                            "@timestamp": { 
-                                "gte": "now-1m"
-                            } 
-                        } 
-                    } 
+                var epsQuery = """
+                {
+                    "query": {
+                        "range": {
+                            "@timestamp": {
+                                "gte": "now-1s"
+                            }
+                        }
+                    }
                 }
                 """;
-                var content = new StringContent(queryJson, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync(ElasticUrl, content);
-
-                if (response.IsSuccessStatusCode)
+                var perMinuteQuery = """
                 {
-                    var jsonString = await response.Content.ReadAsStringAsync();
-                    var jsonDoc = JsonDocument.Parse(jsonString);
-
-                    // Ekstrak nilai count
-                    return jsonDoc.RootElement.GetProperty("count").GetInt32();
+                    "query": {
+                        "range": {
+                            "@timestamp": {
+                                "gte": "now-1m"
+                            }
+                        }
+                    }
                 }
+                """;
 
-                return 0; // Fallback jika response bukan 200 OK
+                var eventsPerSecond = await CountAsync(epsQuery);
+                var eventsLastMinute = await CountAsync(perMinuteQuery);
+
+                var snapshot = new EpsSnapshot
+                {
+                    EventsPerSecond = eventsPerSecond,
+                    EventsLastMinute = eventsLastMinute,
+                    CapturedAtUtc = DateTime.UtcNow
+                };
+
+                _monitoringState.MarkEpsSuccess(snapshot);
+                return snapshot;
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Gagal mengambil data EPS: {ex.Message}");
-                return 0; // Fallback jika Elasticsearch mati atau timeout
+                _monitoringState.MarkEpsFailure();
+                _logger.LogError("Gagal mengambil data event rate: {Message}", ex.Message);
+                return new EpsSnapshot { CapturedAtUtc = DateTime.UtcNow };
             }
+        }
+
+        private async Task<int> CountAsync(string queryJson)
+        {
+            var content = new StringContent(queryJson, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync(_elasticUrl, content);
+            response.EnsureSuccessStatusCode();
+
+            var jsonString = await response.Content.ReadAsStringAsync();
+            var jsonDoc = JsonDocument.Parse(jsonString);
+            return jsonDoc.RootElement.GetProperty("count").GetInt32();
         }
     }
 }

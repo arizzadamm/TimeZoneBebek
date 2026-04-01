@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Xml.Linq;
 using TimeZoneBebek.Helpers;
 using TimeZoneBebek.Models;
+using TimeZoneBebek.Services;
 
 namespace TimeZoneBebek.Controllers
 {
@@ -15,13 +16,15 @@ namespace TimeZoneBebek.Controllers
     {
         private readonly IConfiguration _config;
         private readonly IHttpClientFactory _clientFactory;
+        private readonly MonitoringState _monitoringState;
         private static List<NewsItem> _cachedNews = new();
         private static DateTime _lastNewsFetch = DateTime.MinValue;
 
-        public SystemApiController(IConfiguration config, IHttpClientFactory clientFactory)
+        public SystemApiController(IConfiguration config, IHttpClientFactory clientFactory, MonitoringState monitoringState)
         {
             _config = config;
             _clientFactory = clientFactory;
+            _monitoringState = monitoringState;
         }
 
         [HttpGet("services")]
@@ -42,6 +45,25 @@ namespace TimeZoneBebek.Controllers
 
         [HttpGet("imam-list")]
         public IActionResult GetImamList() => Ok(_config.GetSection("ImamList").Get<string[]>() ?? Array.Empty<string>());
+
+        [HttpGet("auth/validate")]
+        public IActionResult ValidateSession()
+        {
+            var ops = _config.GetSection("OperationsConfig").Get<OperationsConfig>() ?? new OperationsConfig();
+            return Ok(new AuthSessionInfo
+            {
+                Valid = true,
+                SessionDurationHours = ops.SessionDurationHours,
+                ServerTimeUtc = DateTime.UtcNow
+            });
+        }
+
+        [HttpGet("health")]
+        public IActionResult GetHealth()
+        {
+            var health = _monitoringState.GetHealth();
+            return Ok(health);
+        }
 
         [HttpGet("geo-trace")]
         [EnableRateLimiting("fixed-by-ip")]

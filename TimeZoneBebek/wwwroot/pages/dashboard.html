@@ -22,50 +22,61 @@
 
     <style>
 
+        :root {
+            --dash-bg: #030a05;
+            --dash-surface: rgba(6, 14, 18, 0.86);
+            --dash-surface-strong: rgba(7, 18, 24, 0.94);
+            --dash-surface-soft: rgba(0, 0, 0, 0.22);
+            --dash-border: rgba(0, 255, 204, 0.18);
+            --dash-border-strong: rgba(0, 255, 204, 0.42);
+            --dash-text: #f5fffd;
+            --dash-text-muted: #8ea5a0;
+            --dash-text-dim: #666;
+            --dash-warning: var(--yellow);
+            --dash-danger: var(--red);
+            --dash-success: var(--green);
+            --dash-info: var(--cyan);
+            --dash-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
+            --dash-shadow-glow: 0 0 0 1px rgba(0, 255, 204, 0.04), 0 0 28px rgba(0, 255, 204, 0.08);
+            --dash-radius: 16px;
+        }
+
         #app {
             min-height: 100vh;
             width: 100%;
-            box-sizing: border-box; /* Agar efek denyut shadow pas di pinggir layar */
-            /* Pendaran warna Cyan yang ujungnya tembus pandang */
+            box-sizing: border-box;
             background: radial-gradient(circle at 50% -10%, rgba(0, 255, 204, 0.08), transparent 70%);
             transition: background 1s ease-in-out, box-shadow 1s ease-in-out;
         }
-        /* --- GLOBAL BACKGROUND & SCANLINE --- */
         body {
-            background-color: #030a05 !important;
+            background-color: var(--dash-bg) !important;
             background-image: linear-gradient(rgba(0, 255, 204, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 204, 0.03) 1px, transparent 1px);
             background-size: 40px 40px;
             background-position: center center;
             margin: 0;
             overflow-x: hidden;
         }
-
-            /* Efek garis monitor CRT tipis */
-            body::before {
-                content: " ";
-                display: block;
-                position: fixed;
-                top: 0;
-                left: 0;
-                bottom: 0;
-                right: 0;
-                background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
-                background-size: 100% 4px;
-                z-index: 9999;
-                pointer-events: none;
-                opacity: 0.3;
-            }
-
-        /* Pastikan pembungkus transparan agar glow Vue tembus */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0.3;
+        }
         .content, .main-grid {
             background: transparent !important;
         }
-        /* --- GLOBAL THREAT THEME (DEFCON 1) --- */
         .theme-critical {
             --cyan: #ff3366 !important;
             --green: #ff3366 !important;
             --yellow: #ff9900 !important;
-            /* Pendaran berubah Merah Darah saat diserang */
             background: radial-gradient(circle at 50% -10%, rgba(255, 51, 102, 0.25), transparent 70%) !important;
             animation: globalAlarm 2s infinite;
         }
@@ -80,7 +91,6 @@
             }
         }
 
-        /* --- ANIMASI LIST FEED --- */
         .feed-list-enter-active, .feed-list-leave-active {
             transition: all 0.6s ease;
         }
@@ -105,7 +115,6 @@
                 background: rgba(0, 255, 204, 0.1);
             }
 
-        /* --- SKELETON LOADING --- */
         .skeleton-pulse {
             background: linear-gradient(90deg, rgba(0,255,204,0.05) 25%, rgba(0,255,204,0.15) 50%, rgba(0,255,204,0.05) 75%);
             background-size: 200% 100%;
@@ -123,7 +132,6 @@
             }
         }
 
-        /* --- INCIDENT MODAL --- */
         .drilldown-overlay {
             position: fixed;
             top: 0;
@@ -139,11 +147,11 @@
         }
 
         .drilldown-box {
-            background: rgba(5, 10, 15, 0.95);
-            border: 1px solid var(--cyan);
+            background: var(--dash-surface-strong);
+            border: 1px solid var(--dash-border-strong);
             width: 90%;
             max-width: 600px;
-            box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);
+            box-shadow: var(--dash-shadow), var(--dash-shadow-glow);
             padding: 25px;
             display: flex;
             flex-direction: column;
@@ -163,7 +171,7 @@
         .drilldown-row {
             display: grid;
             grid-template-columns: 120px 1fr;
-            border-bottom: 1px dashed #333;
+            border-bottom: 1px dashed rgba(255,255,255,0.08);
             padding-bottom: 8px;
             font-family: 'JetBrains Mono';
             font-size: 0.85rem;
@@ -209,6 +217,333 @@
                     color: #fff;
                     box-shadow: 0 0 15px var(--red);
                 }
+
+        .action-card {
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--dash-shadow), 0 0 24px rgba(255, 204, 0, 0.08);
+            border-color: rgba(255, 204, 0, 0.48) !important;
+        }
+
+        .action-chip {
+            font-size: 0.68rem;
+            color: var(--dash-warning);
+            margin-bottom: 10px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .token-surface {
+            background: var(--dash-surface);
+            border-radius: var(--dash-radius);
+            border: 1px solid var(--dash-border);
+            box-shadow: var(--dash-shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        .dash-brand-header {
+            margin-bottom: 18px;
+        }
+
+        .dash-brand-title {
+            margin: 0;
+            font-size: clamp(1.9rem, 4vw, 3.2rem);
+            font-weight: 900;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 0.08em;
+            color: #effffe;
+            text-transform: uppercase;
+            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+            background: linear-gradient(90deg, #f5fffe 0%, #88eff4 46%, #f6fffe 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .dash-brand-title.alt {
+            background: linear-gradient(90deg, #7ce8f1 0%, #d8ffff 55%, #72cfe5 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .dash-brand-title.glitch::before,
+        .dash-brand-title.glitch::after {
+            opacity: 0.38;
+        }
+
+        .dash-brand-title.glitch::before {
+            left: 1px;
+            text-shadow: -1px 0 rgba(255, 107, 122, 0.45);
+        }
+
+        .dash-brand-title.glitch::after {
+            left: -1px;
+            text-shadow: -1px 0 rgba(124, 232, 241, 0.45);
+        }
+
+        .dash-location {
+            color: #d8fefd;
+            text-shadow: none;
+        }
+
+        .dash-time-shell {
+            padding: 18px;
+            border-radius: 26px;
+            border: 1px solid var(--dash-border);
+            background: linear-gradient(180deg, rgba(8, 19, 25, 0.84), rgba(5, 11, 15, 0.92));
+            box-shadow: var(--dash-shadow), var(--dash-shadow-glow);
+            backdrop-filter: blur(14px);
+        }
+
+        .dash-analog-shell {
+            margin: 0;
+            width: 240px;
+            height: 240px;
+            border-radius: 999px;
+            border: 1px solid rgba(130, 236, 244, 0.18);
+            background:
+                radial-gradient(circle at 50% 50%, rgba(42, 121, 153, 0.16), transparent 58%),
+                linear-gradient(180deg, rgba(6, 18, 24, 0.96), rgba(4, 10, 15, 0.98));
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.58), 0 20px 46px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(0,255,204,0.04);
+        }
+
+        .dash-analog-shell .analog-ring-outer {
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border-color: rgba(126, 231, 242, 0.18);
+            box-shadow: inset 0 0 22px rgba(82, 205, 225, 0.06);
+        }
+
+        .dash-analog-shell .analog-face {
+            border-radius: 999px;
+            background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.04), transparent 38%);
+        }
+
+        .dash-analog-shell .analog-num {
+            color: #a8f7ff;
+            text-shadow: none;
+        }
+
+        .dash-analog-shell .hand-hour,
+        .dash-analog-shell .hand-min {
+            background: linear-gradient(180deg, #f5fffe, #79e7f3);
+            box-shadow: 0 0 16px rgba(121, 231, 243, 0.2);
+        }
+
+        .dash-analog-shell .hand-sec {
+            background: linear-gradient(180deg, #ffd166, #ff7b6b);
+            box-shadow: 0 0 16px rgba(255, 123, 107, 0.2);
+        }
+
+        .dash-analog-shell .center-hub {
+            box-shadow: 0 0 0 5px rgba(6, 17, 20, 0.95), 0 0 18px rgba(123, 235, 243, 0.14);
+            background: #eefefe;
+        }
+
+        .dash-env-panel,
+        .dash-digital-panel {
+            border-radius: 18px;
+            border-color: var(--dash-border) !important;
+            background: linear-gradient(180deg, rgba(10, 23, 30, 0.82), rgba(6, 12, 16, 0.92)) !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 14px 34px rgba(0, 0, 0, 0.24);
+        }
+
+        .dash-terminal-card {
+            grid-column: 1 / -1;
+            background: linear-gradient(180deg, rgba(7, 17, 14, 0.92), rgba(2, 10, 8, 0.96)) !important;
+            border: 1px solid rgba(0,255,153,0.24) !important;
+            box-shadow: inset 0 0 24px rgba(0,255,102,0.04), var(--dash-shadow) !important;
+            border-radius: var(--dash-radius);
+        }
+
+        .token-section {
+            border-radius: var(--dash-radius);
+            border: 1px solid var(--dash-border);
+            background: linear-gradient(180deg, rgba(5, 15, 18, 0.92), rgba(3, 9, 12, 0.86));
+            box-shadow: var(--dash-shadow), var(--dash-shadow-glow);
+        }
+
+        .source-health-strip {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+            padding: 14px;
+        }
+
+        .source-chip {
+            border: 1px solid var(--dash-border);
+            background: var(--dash-surface-soft);
+            border-radius: 12px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .source-chip:hover {
+            transform: translateY(-1px);
+        }
+
+        .source-chip-main {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .source-chip-label {
+            color: var(--dash-text-muted);
+            font-size: 0.68rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .source-chip-state {
+            font-family: 'Orbitron';
+            font-size: 0.95rem;
+            color: var(--dash-text);
+        }
+
+        .source-chip-meta {
+            color: var(--dash-text-dim);
+            font-size: 0.72rem;
+        }
+
+        .source-chip-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 999px;
+            flex-shrink: 0;
+            box-shadow: 0 0 12px currentColor;
+        }
+
+        .source-chip-ok {
+            border-color: rgba(0,255,153,0.34);
+        }
+
+        .source-chip-ok .source-chip-state,
+        .source-chip-ok .source-chip-dot {
+            color: var(--dash-success);
+            background: var(--dash-success);
+        }
+
+        .source-chip-warn {
+            border-color: rgba(255,204,0,0.34);
+        }
+
+        .source-chip-warn .source-chip-state,
+        .source-chip-warn .source-chip-dot {
+            color: var(--dash-warning);
+            background: var(--dash-warning);
+        }
+
+        .source-chip-down {
+            border-color: rgba(255,51,102,0.34);
+        }
+
+        .source-chip-down .source-chip-state,
+        .source-chip-down .source-chip-dot {
+            color: var(--dash-danger);
+            background: var(--dash-danger);
+        }
+
+        .ops-layout {
+            display: grid;
+            grid-template-columns: 1.15fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .ops-card-body {
+            padding: 16px;
+        }
+
+        .ops-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .ops-stat {
+            border: 1px solid var(--dash-border);
+            padding: 12px;
+            background: var(--dash-surface-soft);
+            border-radius: 12px;
+        }
+
+        .ops-stat-label {
+            color: #777;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+        }
+
+        .ops-note {
+            padding: 12px;
+            border: 1px dashed rgba(0,255,204,0.2);
+            background: var(--dash-surface-soft);
+            color: #d7e7e3;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            border-radius: 12px;
+        }
+
+        .queue-section {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .queue-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            background: var(--dash-surface-soft);
+            border-radius: 12px;
+            transition: transform 0.18s ease, border-color 0.18s ease;
+        }
+
+        .queue-item:hover {
+            transform: translateY(-1px);
+        }
+
+        .queue-empty {
+            color: #666;
+            font-size: 0.78rem;
+        }
+
+        .incident-toolbar-control {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(0,255,204,0.4);
+            color: var(--cyan);
+            padding: 8px 10px;
+            font-family: 'JetBrains Mono';
+            border-radius: 10px;
+        }
+
+        @media (max-width: 1100px) {
+            .source-health-strip,
+            .ops-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .source-health-strip,
+            .ops-stat-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body class="loaded">
@@ -239,17 +574,17 @@
 
 <div id="app" class="content" :class="{ 'theme-critical': soc.defconLevel === 'DEFCON 1' || isRealTraffic }" @click="initAudioContext">
 
-    <div class='brand-header'>
+    <div class='brand-header dash-brand-header'>
         <div class="title-switcher-container">
-            <h1 class="brand-title glitch switching-title" :class="{ active: !showBebek }">BAPPENAS CSIRT</h1>
-            <h1 class="brand-title glitch switching-title" :class="{ active: showBebek }" style="color:var(--cyan)">BEBEK PINTAR</h1>
+            <h1 class="brand-title dash-brand-title glitch switching-title" data-text="BAPPENAS CSIRT" :class="{ active: !showBebek }">BAPPENAS CSIRT</h1>
+            <h1 class="brand-title dash-brand-title alt glitch switching-title" data-text="BEBEK PINTAR" :class="{ active: showBebek }">BEBEK PINTAR</h1>
         </div>
         <div class='brand-subtitle'><span id='typed-output'></span></div>
     </div>
 
     <div class='time-section' style="display:flex; justify-content:center;">
-        <div class="clock-stack" style="width:100%; max-width:500px;">
-            <div class="env-panel" style="width:100%; margin-bottom:0;">
+        <div class="clock-stack dash-time-shell" style="width:100%; max-width:560px;">
+            <div class="env-panel dash-env-panel" style="width:100%; margin-bottom:0;">
                 <div class="env-weather-box">
                     <div class="w-icon-sm" v-html="weather.icon"></div>
                     <div class="env-temp">{{ weather.temp }}</div>
@@ -260,18 +595,18 @@
                         <span class="env-date">{{ date.fullDate }}</span>
                         <span style="color:var(--cyan); font-size:0.75rem; margin-left:10px; opacity:0.8; font-family:'Orbitron';">[ {{ date.hijri }} ]</span>
                     </div>
-                    <div class="env-location"><span>📍</span><span class="glitch">{{ locationName }}</span></div>
+                    <div class="env-location"><span>📍</span><span class="dash-location">{{ locationName }}</span></div>
                     <div :class="['w-desc', { 'status-blink': weather.isBad }]" style="font-size:0.7rem; color:#666; margin-top:5px; letter-spacing:1px;">{{ weather.desc }}</div>
                 </div>
             </div>
 
-            <div class="analog-container" style="margin:0; width:220px; height:220px;">
+            <div class="analog-container dash-analog-shell">
                 <div class="analog-ring-outer"></div>
                 <div class="analog-face"><div class="analog-ticks"></div><div class="analog-num n12">12</div><div class="analog-num n3">3</div><div class="analog-num n6">6</div><div class="analog-num n9">9</div></div>
                 <div class="hand-container"><div class="hand hand-hour" :style="{ transform: `rotate(${clockHands.h}deg)` }"></div><div class="hand hand-min" :style="{ transform: `rotate(${clockHands.m}deg)` }"></div><div class="hand hand-sec" :style="{ transform: `rotate(${clockHands.s}deg)` }"></div><div class="center-hub"></div></div>
             </div>
 
-            <div class="digital-panel" style="width:100%; padding:10px;">
+            <div class="digital-panel dash-digital-panel" style="width:100%; padding:10px;">
                 <div class='main-clock-box' style="margin-bottom:5px; padding-bottom:5px;">
                     <span class='label'>WIB (UTC+7)</span>
                     <div class='clock-xl' style="font-size:2.5rem;" :style="clocks.wibStyle">{{ clocks.wib }}</div>
@@ -293,12 +628,16 @@
             <div style="font-size:0.7rem; color:#666;">{{ soc.defconDesc }}</div>
         </div>
 
-        <div class='card hud-card'>
+        <div class='card hud-card action-card' @click="openArchiveList" title="Open actionable archive queue">
             <span class='label'>OPEN TICKETS</span>
             <div style="display:flex; align-items:flex-end; justify-content:space-between;">
                 <div v-if="isLoadingData" class="skeleton-pulse" style="height:50px; width:80px;"></div>
                 <div v-else class='value' style="font-size:2.5rem; color:var(--yellow);">{{ Math.round(odometerTickets) }}</div>
-                <div style="font-size:0.7rem; color:#888; margin-bottom:10px;">ACTIONABLE</div>
+                <div class="action-chip">ACTIONABLE</div>
+            </div>
+            <div style="display:flex; justify-content:space-between; gap:10px; font-size:0.65rem; color:#888; margin-top:6px;">
+                <span>CRITICAL {{ soc.criticalOpenTickets }}</span>
+                <span>HIGH {{ soc.highOpenTickets }}</span>
             </div>
             <div ref="chartRef" style="position:absolute; bottom:0; left:0; right:0;"></div>
         </div>
@@ -327,10 +666,10 @@
 
         <div class='card hud-card' :style="{ borderColor: isRealTraffic ? 'var(--red)' : 'var(--cyan)' }" style="display:flex; flex-direction:column; justify-content:space-between; transition: border-color 0.3s;">
             <div style="display:flex; justify-content:space-between; width:100%;">
-                <span class='label' :style="{ color: isRealTraffic ? 'var(--red)' : 'var(--cyan)' }">SIEM INGESTION</span>
+                <span class='label' :style="{ color: isRealTraffic ? 'var(--red)' : 'var(--cyan)' }">EVENT RATE</span>
 
                 <div class="status-blink" :style="{ color: isRealTraffic ? 'var(--red)' : 'var(--green)' }" style="font-size:0.6rem; margin-top: 2px; font-weight: bold;">
-                    ● {{ isRealTraffic ? 'LIVE INGEST' : 'IDLE NOISE' }}
+                    ● {{ isRealTraffic ? 'REAL EVENTS' : 'BASELINE NOISE' }}
                 </div>
             </div>
 
@@ -340,10 +679,11 @@
                 </div>
                 <div style="font-size: 0.8rem; color: var(--cyan); margin-bottom: 5px; margin-left: 5px; font-family: 'Orbitron';">EPS</div>
             </div>
+            <div style="font-size:0.7rem; color:#888; margin-top:4px;">{{ currentEventsLastMinute }} events / last minute</div>
             <div ref="epsChartRef" style="margin-top: auto; margin-left: -10px; margin-right: -10px; margin-bottom: -10px;"></div>
         </div>
 
-        <div class='card hud-card' style="grid-column: 1 / -1; background: rgba(0, 15, 10, 0.9); border: 1px solid var(--green); box-shadow: inset 0 0 20px rgba(0,255,0,0.05);">
+        <div class='card hud-card dash-terminal-card'>
             <span class='label' style="color:var(--green)">
                 SYSTEM TERMINAL LOG
                 <span class="status-blink" :style="{ color: isTerminalLive ? 'var(--red)' : 'var(--yellow)', marginLeft: '10px' }">
@@ -359,27 +699,128 @@
         </div>
     </div>
 
+    <div class="source-health-strip token-section">
+        <div v-for="source in healthSources" :key="source.key" class="source-chip" :class="source.cssClass">
+            <div class="source-chip-main">
+                <div class="source-chip-label">{{ source.label }}</div>
+                <div class="source-chip-state">{{ source.state }}</div>
+                <div class="source-chip-meta">{{ source.meta }}</div>
+            </div>
+            <div class="source-chip-dot"></div>
+        </div>
+    </div>
+
+    <div class="ops-layout">
+        <div class="intel-box token-section" style="display:block;">
+            <div class="intel-header">
+                <div class="intel-title">>> SHIFT HANDOVER</div>
+                <div style="font-size:0.72rem; color:#666;">NEXT SHIFT BRIEF</div>
+            </div>
+            <div class="ops-card-body ops-stat-grid">
+                <div class="ops-stat">
+                    <div class="ops-stat-label">UNASSIGNED</div>
+                    <div style="font-family:'Orbitron'; font-size:1.4rem; color:var(--yellow);">{{ handover.unassigned }}</div>
+                </div>
+                <div class="ops-stat" style="border-color:rgba(255,51,102,0.22);">
+                    <div class="ops-stat-label">NEEDS ESCALATION</div>
+                    <div style="font-family:'Orbitron'; font-size:1.4rem; color:var(--red);">{{ handover.escalated }}</div>
+                </div>
+                <div class="ops-stat">
+                    <div class="ops-stat-label">NEW LAST 4H</div>
+                    <div style="font-family:'Orbitron'; font-size:1.4rem; color:var(--cyan);">{{ handover.newLast4h }}</div>
+                </div>
+                <div class="ops-stat" style="border-color:rgba(0,255,153,0.2);">
+                    <div class="ops-stat-label">ACTIVE OWNERS</div>
+                    <div style="font-family:'Orbitron'; font-size:1.4rem; color:var(--green);">{{ handover.activeOwners }}</div>
+                </div>
+            </div>
+            <div style="padding:0 16px 16px;">
+                <div style="font-size:0.72rem; color:#888; margin-bottom:8px;">SHIFT NOTES</div>
+                <div class="ops-note">
+                    {{ handover.note }}
+                </div>
+            </div>
+        </div>
+
+        <div class="intel-box token-section" style="display:block;">
+            <div class="intel-header">
+                <div class="intel-title">>> ANALYST QUEUE</div>
+                <div style="font-size:0.72rem; color:#666;">PRIORITY WORKLIST</div>
+            </div>
+            <div class="ops-card-body queue-section">
+                <div>
+                    <div style="color:var(--yellow); font-family:'Orbitron'; font-size:0.78rem; margin-bottom:8px;">UNASSIGNED</div>
+                    <div v-if="analystQueue.unassigned.length === 0" class="queue-empty">No unassigned incidents.</div>
+                    <div v-for="inc in analystQueue.unassigned" :key="`u-${inc.id}`" @click="openIncidentDetail(inc)" class="queue-item" style="border:1px solid rgba(255,204,0,0.18);">
+                        <div style="display:flex; justify-content:space-between; gap:10px;">
+                            <span style="color:#fff;">{{ inc.title }}</span>
+                            <span :class="getSevClass(inc.severity)">{{ inc.severity }}</span>
+                        </div>
+                        <div style="font-size:0.72rem; color:#777;">{{ inc.attacker }} · {{ inc.status }}</div>
+                    </div>
+                </div>
+                <div>
+                    <div style="color:var(--cyan); font-family:'Orbitron'; font-size:0.78rem; margin-bottom:8px;">ACTIVE INVESTIGATION</div>
+                    <div v-if="analystQueue.inProgress.length === 0" class="queue-empty">No active investigations.</div>
+                    <div v-for="inc in analystQueue.inProgress" :key="`p-${inc.id}`" @click="openIncidentDetail(inc)" class="queue-item" style="border:1px solid rgba(0,255,204,0.18);">
+                        <div style="display:flex; justify-content:space-between; gap:10px;">
+                            <span style="color:#fff;">{{ inc.title }}</span>
+                            <span style="color:#9be7d7;">{{ inc.owner || 'UNASSIGNED' }}</span>
+                        </div>
+                        <div style="font-size:0.72rem; color:#777;">{{ inc.status }} · {{ inc.affectedAsset || inc.source || 'No asset' }}</div>
+                    </div>
+                </div>
+                <div>
+                    <div style="color:var(--red); font-family:'Orbitron'; font-size:0.78rem; margin-bottom:8px;">ESCALATED</div>
+                    <div v-if="analystQueue.escalated.length === 0" class="queue-empty">No escalated incidents.</div>
+                    <div v-for="inc in analystQueue.escalated" :key="`e-${inc.id}`" @click="openIncidentDetail(inc)" class="queue-item" style="border:1px solid rgba(255,51,102,0.18);">
+                        <div style="display:flex; justify-content:space-between; gap:10px;">
+                            <span style="color:#fff;">{{ inc.title }}</span>
+                            <span style="color:var(--red);">{{ inc.owner || 'UNASSIGNED' }}</span>
+                        </div>
+                        <div style="font-size:0.72rem; color:#777;">{{ inc.attacker }} · {{ inc.status }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="incident-feed-box" style="margin-top: 20px;">
         <div class="feed-header">
             <span>>> LIVE INCIDENT STREAM</span>
-            <span class="status-blink" style="color:var(--red);">● LIVE</span>
+            <span class="status-blink" style="color:var(--red);">● PRIORITIZED</span>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:10px; padding:12px 0; align-items:center;">
+            <input v-model="incidentFilters.query" type="text" placeholder="Filter ID / title / actor / asset" class="incident-toolbar-control" style="flex:1; min-width:220px;">
+            <select v-model="incidentFilters.severity" class="incident-toolbar-control">
+                <option v-for="severity in allowedSeverities" :key="severity" :value="severity">{{ severity }}</option>
+            </select>
+            <select v-model="incidentFilters.status" class="incident-toolbar-control">
+                <option v-for="status in allowedStatuses" :key="status" :value="status">{{ status }}</option>
+            </select>
+            <label style="display:flex; align-items:center; gap:6px; color:#aaa; font-size:0.72rem;">
+                <input v-model="incidentFilters.unresolvedOnly" type="checkbox">
+                Unresolved only
+            </label>
         </div>
         <table class="feed-table">
-            <thead><tr><th width="15%">TIME</th><th width="10%">SEV</th><th>TITLE / VECTOR</th><th width="20%">ACTOR</th></tr></thead>
+            <thead><tr><th width="13%">TIME</th><th width="10%">SEV</th><th width="14%">STATUS</th><th>TITLE / VECTOR</th><th width="18%">ACTOR</th><th width="16%">OWNER / ASSET</th></tr></thead>
             <transition-group name="feed-list" tag="tbody">
                 <tr v-if="isLoadingData && soc.recentIncidents.length === 0" key="loading-row">
-                    <td colspan="4" style="text-align:center; padding: 20px;">
+                    <td colspan="6" style="text-align:center; padding: 20px;">
                         <div class="skeleton-pulse" style="height:20px; width:50%; margin:auto;"></div>
                     </td>
                 </tr>
-                <tr v-else-if="soc.recentIncidents.length === 0" key="empty-row">
-                    <td colspan="4" style="text-align:center; color:#666;">AWAITING THREAT DATA...</td>
+                <tr v-else-if="filteredRecentIncidents.length === 0" key="empty-row">
+                    <td colspan="6" style="text-align:center; color:#666;">NO INCIDENTS MATCHING ACTIVE FILTERS</td>
                 </tr>
-                <tr v-for="inc in soc.recentIncidents" :key="inc.id" class="clickable-row" @click="openIncidentDetail(inc)" title="Click to view details">
+                <tr v-for="inc in filteredRecentIncidents" :key="inc.id" class="clickable-row" :style="getIncidentRowStyle(inc)" @click="openIncidentDetail(inc)" title="Click to view details">
                     <td style="color:#666;">{{ formatTime(inc.date) }}</td>
                     <td :class="getSevClass(inc.severity)">{{ inc.severity.substring(0,3) }}</td>
-                    <td>{{ escapeHtml(inc.title) }}</td>
+                    <td style="color:#aaa;">{{ inc.status }}</td>
+                    <td>{{ escapeHtml(inc.title) }} <span v-if="isFreshIncident(inc)" style="color:var(--yellow); font-size:0.68rem;">[NEW]</span></td>
                     <td style="color:#fff;">{{ escapeHtml(inc.attacker) }}</td>
+                    <td style="color:#9be7d7;">{{ escapeHtml(inc.owner || inc.affectedAsset || 'UNASSIGNED') }}</td>
                 </tr>
             </transition-group>
         </table>
@@ -410,21 +851,32 @@
                 <span><i class="fas fa-crosshairs"></i> THREAT DOSSIER</span>
                 <button @click="closeIncidentDetail" style="background:none; border:none; color:var(--red); font-size:1.5rem; cursor:pointer;"><i class="fas fa-times"></i></button>
             </div>
-            <div style="flex:1; overflow-y:auto; padding-right:10px;">
-                <div class="drilldown-row"><span class="drilldown-label">ID</span><span class="drilldown-val" style="color:var(--yellow)">{{ incidentModal.data.id }}</span></div>
-                <div class="drilldown-row"><span class="drilldown-label">TIMESTAMP</span><span class="drilldown-val">{{ formatTime(incidentModal.data.date) }}</span></div>
-                <div class="drilldown-row"><span class="drilldown-label">SEVERITY</span><span class="drilldown-val" :class="getSevClass(incidentModal.data.severity)">{{ incidentModal.data.severity }}</span></div>
-                <div class="drilldown-row"><span class="drilldown-label">ATTACKER IP</span><span class="drilldown-val" style="font-family:monospace; color:var(--cyan)">{{ incidentModal.data.attacker }}</span></div>
-                <div class="drilldown-row"><span class="drilldown-label">VECTOR</span><span class="drilldown-val">{{ incidentModal.data.title }}</span></div>
+                <div style="flex:1; overflow-y:auto; padding-right:10px;">
+                    <div class="drilldown-row"><span class="drilldown-label">ID</span><span class="drilldown-val" style="color:var(--yellow)">{{ incidentModal.data.id }}</span></div>
+                    <div class="drilldown-row"><span class="drilldown-label">TIMESTAMP</span><span class="drilldown-val">{{ formatTime(incidentModal.data.date) }}</span></div>
+                    <div class="drilldown-row"><span class="drilldown-label">SEVERITY</span><span class="drilldown-val" :class="getSevClass(incidentModal.data.severity)">{{ incidentModal.data.severity }}</span></div>
+                    <div class="drilldown-row"><span class="drilldown-label">STATUS</span><span class="drilldown-val">{{ incidentModal.data.status }}</span></div>
+                    <div class="drilldown-row"><span class="drilldown-label">ATTACKER IP</span><span class="drilldown-val" style="font-family:monospace; color:var(--cyan)">{{ incidentModal.data.attacker }}</span></div>
+                    <div class="drilldown-row"><span class="drilldown-label">VECTOR</span><span class="drilldown-val">{{ incidentModal.data.title }}</span></div>
+                    <div class="drilldown-row"><span class="drilldown-label">SOURCE</span><span class="drilldown-val">{{ incidentModal.data.source || 'UNSPECIFIED' }}</span></div>
+                    <div class="drilldown-row"><span class="drilldown-label">ASSET</span><span class="drilldown-val">{{ incidentModal.data.affectedAsset || 'UNSPECIFIED' }}</span></div>
+                    <div class="drilldown-row"><span class="drilldown-label">OWNER</span><span class="drilldown-val">{{ incidentModal.data.owner || 'UNASSIGNED' }}</span></div>
+                    <div class="drilldown-row"><span class="drilldown-label">FIRST/LAST</span><span class="drilldown-val">{{ formatDateTime(incidentModal.data.firstSeen || incidentModal.data.date) }} / {{ formatDateTime(incidentModal.data.lastSeen || incidentModal.data.date) }}</span></div>
 
-                <div style="background: rgba(0,0,0,0.5); padding:10px; border: 1px dashed #444; margin-top: 15px; font-family:'JetBrains Mono'; font-size:0.75rem; color:#aaa;">
-                    <b>[PAYLOAD SUMMARY]</b><br>
-                    {{ incidentModal.data.summary || 'No payload signature provided.' }}
+                    <div style="background: rgba(0,0,0,0.5); padding:10px; border: 1px dashed #444; margin-top: 15px; font-family:'JetBrains Mono'; font-size:0.75rem; color:#aaa;">
+                        <b>[PAYLOAD SUMMARY]</b><br>
+                        {{ incidentModal.data.summary || 'No payload signature provided.' }}
+                    </div>
+                    <div v-if="incidentModal.data.resolutionNote" style="background: rgba(0,20,0,0.35); padding:10px; border: 1px dashed var(--green); margin-top: 12px; font-family:'JetBrains Mono'; font-size:0.75rem; color:#d7ffe9;">
+                        <b>[RESOLUTION NOTE]</b><br>
+                        {{ incidentModal.data.resolutionNote }}
+                    </div>
                 </div>
-            </div>
-            <div style="display:flex; gap:10px; margin-top: 10px;">
-                <button class="cyber-btn" style="flex:1;" @click="closeIncidentDetail">ACKNOWLEDGE</button>
-                <button class="cyber-btn btn-red" style="flex:1;" @click="isolateAttacker(incidentModal.data.attacker)"><i class="fas fa-shield-alt"></i> ISOLATE IP</button>
+            <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; margin-top: 10px;">
+                <button class="cyber-btn" @click="quickAssignIncident(incidentModal.data)"><i class="fas fa-user-plus"></i> ASSIGN TO ME</button>
+                <button class="cyber-btn" @click="quickStatusChange(incidentModal.data, nextQuickStatus(incidentModal.data.status))">{{ nextQuickStatus(incidentModal.data.status) }}</button>
+                <button class="cyber-btn" @click="openArchiveIncident(incidentModal.data.id)"><i class="fas fa-up-right-from-square"></i> OPEN ARCHIVE</button>
+                <button class="cyber-btn btn-red" @click="isolateAttacker(incidentModal.data.attacker)"><i class="fas fa-shield-alt"></i> ISOLATE IP</button>
             </div>
         </div>
     </div>
@@ -444,345 +896,6 @@
     </div>
 
 </div>
-    <script>
-        const {createApp, ref, reactive, onMounted, onUnmounted, watch } = Vue;
-
-        createApp({
-            setup() {
-                const CONFIG = { DEF_LAT: -6.212530770381996, DEF_LON: 106.83045523468515, START: 8, END: 16 };
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-                const isLoadingData = ref(true);
-                const odometerTickets = ref(0);
-                const incidentModal = reactive({ show: false, data: null });
-                const isTerminalLive = ref(false);
-
-                const showBebek = ref(false);
-                const locationName = ref("LOCATING...");
-                const weather = reactive({ temp: '--°', desc: 'WAITING...', icon: '<div class="cloud"></div>', isBad: false });
-
-                const clockHands = reactive({ h: 0, m: 0, s: 0 });
-                const clocks = reactive({ wib: '00:00:00', wita: '00:00', wit: '00:00', utc: '00:00', wibStyle: {} });
-                const date = reactive({ dayName: '---', fullDate: 'Loading...', hijri: '' });
-                const shift = reactive({ timerText: '00:00:00', isOffDuty: false });
-
-                const soc = reactive({ openTickets: 0, defconLevel: 'DEFCON 5', defconDesc: 'NORMAL OPERATIONS', defconColor: 'var(--green)', defconShadow: 'none', topAttacker: '---', topAttackerPct: 0, recentIncidents: [] });
-                const chartRef = ref(null);
-                let chartInstance = null;
-
-                const prayerTimes = ref({});
-                const imamPool = ref([]);
-                const nextPrayer = reactive({ name: '---', time: '--:--', countdown: '', isNear: false });
-
-                const modal = reactive({ show: false, type: '', title: '', msg: '', color: 'var(--yellow)', shadow: 'none', progressWidth: '100%', transition: 'none', prayerName: '', imamText: '...', imamColor: '#aaa' });
-                let modalTimer = null;
-                const flags = { shiftAlerted: false, prayerAlerted: false };
-
-                const newsFeed = ref([]);
-                const sysLogs = ref([]);
-
-                const epsChartRef = ref(null);
-                let epsChartInstance = null;
-                const currentEps = ref("0");
-                const epsDataSeries = ref(Array(15).fill(0));
-                const isRealTraffic = ref(true);
-
-
-
-                // --- 1. ODOMETER ---
-                watch(() => soc.openTickets, (newVal) => {
-                    let start = odometerTickets.value;
-                    const duration = 1000;
-                    const startTime = performance.now();
-                    const animateCount = (time) => {
-                        const progress = Math.min((time - startTime) / duration, 1);
-                        odometerTickets.value = start + (newVal - start) * progress;
-                        if (progress < 1) requestAnimationFrame(animateCount);
-                    };
-                    requestAnimationFrame(animateCount);
-                });
-
-                // --- 2. SIGNALR TERMINAL ENGINE ---
-                let terminalConnection = null;
-
-                const initSignalRTerminal = async () => {
-                    terminalConnection = new signalR.HubConnectionBuilder()
-                        .withUrl("/threatHub")
-                        .withAutomaticReconnect()
-                        .build();
-
-                    const addLog = (msg) => {
-                        const t = new Date();
-                        const timeStr = `${t.toLocaleTimeString('id-ID')}::${String(t.getMilliseconds()).padStart(3, '0')}`;
-                        sysLogs.value.unshift(`[${timeStr}] ${msg}`);
-                        // Naikkan batas baris menjadi 25 agar terminal terlihat lebih penuh
-                        if (sysLogs.value.length > 25) sysLogs.value.pop();
-                    };
-
-                    addLog("<span style='color:var(--yellow)'>[SYS] INITIALIZING ELASTIC STREAM...</span>");
-
-                    // --- FITUR: SABUK PENGAMAN DEDUPLIKASI ---
-                    const processedLogs = new Set();
-
-                    // Dengarkan data serangan real-time
-                    terminalConnection.on("ReceiveThreats", (data) => {
-                        data.forEach(t => {
-                            // 1. Buat "Sidik Jari" unik berdasarkan IP dan Hit Count
-                            const logSignature = `${t.ip}_${t.count}`;
-
-                            // 2. Cek apakah ini serangan yang baru (hitungan bertambah / IP baru)
-                            if (!processedLogs.has(logSignature)) {
-
-                                // Simpan ke ingatan
-                                processedLogs.add(logSignature);
-
-                                // Cegah memori bocor (ingat 100 log terakhir saja)
-                                if (processedLogs.size > 100) {
-                                    const firstItem = processedLogs.values().next().value;
-                                    processedLogs.delete(firstItem);
-                                }
-
-                                const ip = t.ip || "UNKNOWN_IP";
-                                const country = t.country || "UNK";
-                                let type = t.type;
-                                if (!type) {
-                                    if (t.count > 500) type = "DDOS";
-                                    else if (t.count > 200) type = "BRUTEFORCE";
-                                    else type = "SUSPICIOUS";
-                                }
-
-                                const color = t.count > 200 ? "var(--red)" : "var(--yellow)";
-                                addLog(`<span style='color:#fff'>INBOUND FROM ${ip} (${country})</span> ..... <span style='color:${color}'>${type} DETECTED</span>`);
-                            }
-                        });
-                    });
-
-                    // --- MANAJEMEN STATUS LIVE / CONNECTING ---
-                    terminalConnection.onreconnecting(() => {
-                        isTerminalLive.value = false; // Matikan indikator LIVE saat putus
-                        addLog("<span style='color:var(--yellow)'>[SYS] CONNECTION LOST. RECONNECTING...</span>");
-                    });
-
-                    terminalConnection.onreconnected(() => {
-                        isTerminalLive.value = true; // Nyalakan indikator LIVE saat nyambung lagi
-                        addLog("<span style='color:var(--green)'>[SYS] SOCKET RECONNECTED.</span>");
-                    });
-
-                    try {
-                        await terminalConnection.start();
-                        isTerminalLive.value = true; // Nyalakan indikator LIVE saat koneksi awal berhasil
-                        addLog("<span style='color:var(--green)'>[SYS] REAL-TIME THREAT STREAM ACTIVE.</span>");
-                    } catch (e) {
-                        isTerminalLive.value = false; // Pastikan mati jika koneksi gagal
-                        addLog("<span style='color:var(--red)'>[SYS] CONNECTION FAILED. RETRYING...</span>");
-                    }
-                };
-
-                // --- 3. MODALS & AUDIO ---
-                const openIncidentDetail = (inc) => { incidentModal.data = inc; incidentModal.show = true; };
-                const closeIncidentDetail = () => { incidentModal.show = false; incidentModal.data = null; };
-                const isolateAttacker = (ip) => {
-                    closeIncidentDetail();
-                    Toastify({ text: `INITIATING FIREWALL BLOCK FOR ${ip}...`, duration: 2000, style: { background: "linear-gradient(to right, #ff5f6d, #ffc371)", color: "#000", fontFamily: "Orbitron" } }).showToast();
-                    setTimeout(() => { Toastify({ text: `IP ${ip} SUCCESSFULLY ISOLATED`, duration: 3000, style: { background: "#111", border: "1px solid var(--cyan)", color: "var(--cyan)", fontFamily: "Orbitron" } }).showToast(); }, 2000);
-                };
-
-                const initAudioContext = () => { if (audioCtx.state === 'suspended') audioCtx.resume(); };
-                const playTone = (f, s, d, t = 'sine', v = 0.1) => { const n = audioCtx.currentTime; const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type = t; o.frequency.setValueAtTime(f, n + s); g.gain.setValueAtTime(0, n + s); g.gain.linearRampToValueAtTime(v, n + s + 0.05); g.gain.exponentialRampToValueAtTime(0.001, n + s + d); o.connect(g); g.connect(audioCtx.destination); o.start(n + s); o.stop(n + s + d); };
-                const playAlertSound = (t) => { initAudioContext(); if (t === 'START') { [261.6, 329.6, 392, 493.8].forEach((f, i) => playTone(f, i * 0.1, 0.2, 'triangle')); playTone(523.2, 0.4, 0.8, 'square', 0.05); } else if (t === 'END') { [880, 659.2, 523.2].forEach((f, i) => playTone(f, i * 0.3, 0.6)); playTone(392, 0.9, 1.5); } else if (t === 'PRAYER') { playTone(659.25, 0, 1.5, 'sine', 0.1); playTone(523.25, 0.6, 2.0, 'sine', 0.1); const s = 2.5;[164.81, 329.63, 349.23, 415.30, 329.63].forEach((f, i) => playTone(f, s + (i < 2 ? 0 : i < 3 ? 4 : i < 4 ? 5.5 : 8.5), i < 2 ? 4 : i < 3 ? 1.5 : i < 4 ? 3 : 5, 'triangle', 0.15)); } };
-
-                // --- 4. CLOCK ENGINE ---
-                const fW = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); const fWa = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); const fWt = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jayapura', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); const fU = new Intl.DateTimeFormat('id-ID', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); const fH = new Intl.DateTimeFormat('id-ID-u-ca-islamic', { day: 'numeric', month: 'long', year: 'numeric' });
-                let lastSec = -1;
-
-                const clockLoop = () => {
-                    const now = new Date(); const ms = now.getMilliseconds(); const s = now.getSeconds(); const m = now.getMinutes(); const h = now.getHours();
-                    clockHands.s = (s + (ms / 1000)) * 6; clockHands.m = (m * 6) + (s * 0.1); clockHands.h = ((h % 12) * 30) + (m * 0.5);
-                    if (s !== lastSec) {
-                        lastSec = s; clocks.wib = fW.format(now).replace(/\./g, ':'); clocks.wita = fWa.format(now).replace(/\./g, ':'); clocks.wit = fWt.format(now).replace(/\./g, ':'); clocks.utc = fU.format(now).replace(/\./g, ':');
-                        const isW = h >= CONFIG.START && h < CONFIG.END; clocks.wibStyle = { color: isW ? 'var(--cyan)' : 'var(--red)', textShadow: isW ? '0 0 20px rgba(0, 255, 204, 0.2)' : '0 0 20px rgba(255, 51, 102, 0.4)' };
-                        const dy = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU']; const mt = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES'];
-                        date.dayName = dy[now.getDay()]; date.fullDate = `${String(now.getDate()).padStart(2, '0')} ${mt[now.getMonth()]} ${now.getFullYear()}`; date.hijri = fH.format(now);
-                        if (h === CONFIG.START && m === 0 && s < 2 && !flags.shiftAlerted) { triggerModal('START'); flags.shiftAlerted = true; } else if (h === CONFIG.END && m === 0 && s < 2 && !flags.shiftAlerted) { triggerModal('END'); flags.shiftAlerted = true; } else if (s > 5) flags.shiftAlerted = false;
-                        const sS = new Date(); sS.setHours(CONFIG.START, 0, 0, 0); const d = now - sS;
-                        if (d < 0) { shift.isOffDuty = true; shift.timerText = "OFF DUTY"; } else { shift.isOffDuty = false; shift.timerText = `${String(Math.floor(d / 36e5)).padStart(2, '0')}:${String(Math.floor((d % 36e5) / 6e4)).padStart(2, '0')}:${String(Math.floor((d % 6e4) / 1e3)).padStart(2, '0')}`; }
-                        updatePrayerData(now, h, m, s);
-                    }
-                    requestAnimationFrame(clockLoop);
-                };
-
-                const updatePrayerData = (n, h, m, s) => {
-                    const cT = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; const cM = (h * 60) + m; let fN = null; let mD = Infinity;
-                    Object.entries(prayerTimes.value).forEach(([pn, pt]) => {
-                        if (pt === cT && s < 2 && !flags.prayerAlerted) { const im = imamPool.value.length ? imamPool.value[Math.floor(Math.random() * imamPool.value.length)] : "TBA"; triggerModal('PRAYER', { name: pn, imam: im }); flags.prayerAlerted = true; }
-                        const [ph, pm] = pt.split(':').map(Number); const pms = (ph * 60) + pm;
-                        if (pms > cM && (pms - cM) < mD) { mD = pms - cM; fN = { pn, pt }; }
-                    });
-                    if (s > 5) flags.prayerAlerted = false;
-                    if (fN) { nextPrayer.name = fN.pn.toUpperCase(); nextPrayer.time = fN.pt; const hl = Math.floor(mD / 60), ml = mD % 60; nextPrayer.countdown = `-${String(hl).padStart(2, '0')}:${String(ml).padStart(2, '0')}`; nextPrayer.isNear = (hl === 0 && ml < 10); }
-                    else { nextPrayer.name = "FAJR"; nextPrayer.time = prayerTimes.value['Fajr'] || "--:--"; nextPrayer.countdown = ""; nextPrayer.isNear = false; }
-                };
-
-                // --- 5. DATA FETCHERS ---
-                const fetchGeoData = async () => {
-                    fetch('/api/imam-list', { headers: { 'X-API-KEY': API_KEY } }).then(r => r.json()).then(d => imamPool.value = d).catch(e => { });
-                    if (navigator.geolocation) { navigator.geolocation.getCurrentPosition((pos) => { getApis(pos.coords.latitude, pos.coords.longitude); }, () => { getApis(CONFIG.DEF_LAT, CONFIG.DEF_LON); }); }
-                    else getApis(CONFIG.DEF_LAT, CONFIG.DEF_LON);
-                };
-
-                const getApis = async (lat, lon) => {
-                    const d = new Date();
-                    fetch(`https://api.aladhan.com/v1/timings/${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}?latitude=${lat}&longitude=${lon}&method=20`)
-                        .then(r => r.json())
-                        .then(res => {
-                            if (res.data && res.data.timings) {
-                                const t = res.data.timings;
-                                prayerTimes.value = { Fajr: t.Fajr, Dhuhr: t.Dhuhr, Asr: t.Asr, Maghrib: t.Maghrib, Isha: t.Isha };
-                            }
-                        }).catch(e => console.warn("API Sholat offline"));
-
-                    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`)
-                        .then(r => r.json())
-                        .then(res => {
-                            if (res.current_weather) {
-                                const w = res.current_weather; weather.temp = `${Math.round(w.temperature)}°`;
-                                const cd = { 0: { t: "CLEAR SKY", i: `<div class="sun"></div>` }, 1: { t: "CLOUDY", i: `<div class="cloud"></div>` }, 51: { t: "RAIN", i: `<div class="rain-cloud"></div><div class="rain-drop"></div>` } };
-                                const mp = cd[w.weathercode === 0 ? 0 : (w.weathercode <= 3 ? 1 : 51)];
-                                weather.desc = mp.t; weather.icon = mp.i; weather.isBad = (w.weathercode >= 51);
-                            }
-                        }).catch(e => weather.desc = "OFFLINE");
-
-                    fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=id`)
-                        .then(r => r.json())
-                        .then(res => {
-                            locationName.value = (res.locality && res.city ? `${res.locality}, ${res.city}` : res.city || "UNKNOWN").toUpperCase();
-                        }).catch(e => locationName.value = "OFFLINE");
-                };
-
-                const fetchSocData = async () => {
-                    try {
-                        const res = await fetch('/api/incidents', { headers: { 'X-API-KEY': API_KEY } });
-                        if (!res.ok) throw new Error();
-                        const data = await res.json();
-                        const active = data.filter(i => !i.status || i.status.toUpperCase() !== 'RESOLVED');
-
-                        soc.openTickets = active.length;
-                        soc.recentIncidents = data.slice(0, 5);
-
-                        const crit = active.filter(i => i.severity === 'CRITICAL').length;
-                        const high = active.filter(i => i.severity === 'HIGH').length;
-                        if (crit > 0) { soc.defconLevel = 'DEFCON 1'; soc.defconColor = 'var(--red)'; soc.defconShadow = '0 0 15px rgba(255,0,0,0.3)'; soc.defconDesc = 'CRITICAL THREAT ACTIVE'; }
-                        else if (high > 2) { soc.defconLevel = 'DEFCON 3'; soc.defconColor = '#e67e22'; soc.defconShadow = 'none'; soc.defconDesc = 'ELEVATED RISK'; }
-                        else { soc.defconLevel = 'DEFCON 5'; soc.defconColor = 'var(--green)'; soc.defconShadow = 'none'; soc.defconDesc = 'NORMAL OPERATIONS'; }
-
-                        if (data.length > 0) {
-                            const counts = {}; data.forEach(x => counts[x.attacker] = (counts[x.attacker] || 0) + 1);
-                            soc.topAttacker = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
-                            soc.topAttackerPct = Math.min((counts[soc.topAttacker] / data.length) * 100, 100);
-                            const hoursMap = new Array(12).fill(0); const now = new Date();
-                            data.forEach(inc => { const hDiff = (now - new Date(inc.date)) / 36e5; if (hDiff <= 12) hoursMap[Math.floor(hDiff)]++; });
-                            chartInstance?.updateSeries([{ data: hoursMap.reverse() }]);
-                        }
-                    } catch (e) { }
-                    finally { isLoadingData.value = false; }
-                };
-
-                const fetchNews = () => { fetch('/api/news', { headers: { 'X-API-KEY': API_KEY } }).then(r => r.json()).then(d => { if (d.length) newsFeed.value = d; }); };
-                const escapeHtml = (text) => { if (!text) return ""; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); };
-                const formatTime = (d) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                const getSevClass = (s) => s === 'CRITICAL' ? 'sev-crt' : (s === 'HIGH' ? 'sev-hgh' : (s === 'MEDIUM' ? 'sev-med' : 'sev-low'));
-                const toggleFullScreen = () => !document.fullscreenElement ? document.documentElement.requestFullscreen() : document.exitFullscreen();
-                const animateJackpot = (fV) => { const p = imamPool.value.length > 0 ? imamPool.value : ["SEARCHING..."]; let c = 0; const ts = 90; const id = setInterval(() => { modal.imamText = p[Math.floor(Math.random() * p.length)]; modal.imamColor = (c % 2 === 0) ? "#fff" : "#aaa"; c++; if (c >= ts) { clearInterval(id); modal.imamText = fV; modal.imamColor = "var(--green)"; if (typeof confetti === 'function') { confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00ff99', '#00ffff', '#ffffff'], zIndex: 10001 }); } } }, 30); };
-                const triggerModal = (type, data = null) => { modal.show = true; modal.type = type; modal.progressWidth = '100%'; modal.transition = 'none'; if (modalTimer) clearTimeout(modalTimer); setTimeout(() => { modal.progressWidth = '0%'; modal.transition = 'width 60s linear'; }, 100); if (type === 'START') { modal.title = "🚀 SYSTEM INITIALIZED"; modal.color = "var(--cyan)"; modal.shadow = "0 0 50px rgba(0,255,204,0.3)"; modal.msg = "DUTY CYCLE STARTED.<br>ALL SYSTEMS GREEN."; } else if (type === 'END') { modal.title = "⚠️ DUTY CYCLE ENDED"; modal.color = "var(--yellow)"; modal.shadow = "0 0 50px rgba(255,204,0,0.3)"; modal.msg = "OPERATIONAL HOURS COMPLETE.<br>SECURE WORKSTATION."; } else if (type === 'PRAYER') { modal.title = `🕌 PRAYER: ${data.name}`; modal.prayerName = data.name; modal.color = "var(--green)"; modal.shadow = "0 0 60px rgba(0,255,153,0.4)"; animateJackpot(data.imam); } playAlertSound(type); modalTimer = setTimeout(closeModal, 60000); };
-                const closeModal = () => { modal.show = false; if (modalTimer) clearTimeout(modalTimer); };
-
-                // --- 6. LIFECYCLE ---
-                let intervals = [];
-                onMounted(() => {
-                    new Typed('#typed-output', { strings: ["BY ^200 <span style='color:var(--cyan)'>CYBERTEAM BAPPENAS</span>", "SYSTEM STATUS: ^500 <span style='color:var(--green)'>SECURE</span>", "MONITORING ACTIVE..."], typeSpeed: 30, backSpeed: 20, backDelay: 2000, loop: true, contentType: 'html' });
-                    chartInstance = new ApexCharts(chartRef.value, { series: [{ name: 'Incidents', data: [0, 0, 0, 0, 0, 0, 0, 0] }], chart: { type: 'area', height: 80, sparkline: { enabled: true } }, stroke: { curve: 'smooth', width: 2 }, fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.1, stops: [0, 90, 100] } }, colors: ['#f1c40f'] });
-                    chartInstance.render();
-
-                    fetchGeoData(); fetchNews(); fetchSocData(); requestAnimationFrame(clockLoop);
-
-                    // AKTIFKAN SIGNALR TERMINAL
-                    initSignalRTerminal();
-
-                    // --- FITUR: SYSTEM HEARTBEAT LOG ---
-                    // Memunculkan log normal secara acak setiap 8.5 detik
-                    intervals.push(setInterval(() => {
-                        const sysActions = [
-                            "FW_RULE_SYNC ..... <span style='color:var(--green)'>OK</span>",
-                            "ELASTIC_NODE_PING ..... <span style='color:var(--green)'>3ms</span>",
-                            "MEM_USAGE_CHECK ..... <span style='color:var(--cyan)'>STABLE</span>",
-                            "AUTH_GATEWAY_POLL ..... <span style='color:var(--green)'>SECURE</span>",
-                            "N8N_WORKFLOW_SYNC ..... <span style='color:var(--cyan)'>IDLE</span>",
-                            "DB_CLUSTER_HEALTH ..... <span style='color:var(--green)'>GREEN</span>"
-                        ];
-                        const randomAction = sysActions[Math.floor(Math.random() * sysActions.length)];
-                        const t = new Date();
-                        const timeStr = `${t.toLocaleTimeString('id-ID')}::${String(t.getMilliseconds()).padStart(3, '0')}`;
-
-                        sysLogs.value.unshift(`[${timeStr}] <span style='color:#666'>[SYS_HBT]</span> ${randomAction}`);
-                        if (sysLogs.value.length > 25) sysLogs.value.pop();
-                    }, 8500));
-                    epsChartInstance = new ApexCharts(epsChartRef.value, {
-                        series: [{ name: 'EPS', data: epsDataSeries.value }],
-                        chart: {
-                            type: 'bar', height: 60, sparkline: { enabled: true },
-                            animations: { enabled: true, easing: 'linear', dynamicAnimation: { speed: 1000 } }
-                        },
-                        plotOptions: { bar: { columnWidth: '70%', borderRadius: 2 } },
-                        colors: ['#00ffcc'], // Warna Cyan terang
-                        tooltip: { fixed: { enabled: false }, x: { show: false }, marker: { show: false } }
-                    });
-                    epsChartInstance.render();
-
-                    // --- GENERATOR DATA EPS REAL-TIME ---
-                    intervals.push(setInterval(async () => {
-                        try {
-                            const res = await fetch('/api/eps', { headers: { 'X-API-KEY': API_KEY } });
-                            if (res.ok) {
-                                const data = await res.json();
-                                let realEps = data.eps;
-
-                                if (realEps === 0) {
-                                    // MODE 1: AMAN / IDLE (Gunakan data buatan)
-                                    isRealTraffic.value = false;
-                                    const fakeEps = Math.floor(Math.random() * (25 - 12 + 1)) + 12;
-                                    currentEps.value = fakeEps.toString();
-                                    epsDataSeries.value.push(fakeEps);
-                                } else {
-                                    // MODE 2: ADA SERANGAN / LOG ASLI MASUK!
-                                    isRealTraffic.value = true;
-                                    currentEps.value = realEps.toLocaleString('id-ID');
-                                    epsDataSeries.value.push(realEps);
-                                }
-
-                                // Update Grafik
-                                if (epsDataSeries.value.length > 15) epsDataSeries.value.shift();
-                                epsChartInstance.updateSeries([{ data: epsDataSeries.value }]);
-                            }
-                        } catch (e) {
-                            // ...
-                        }
-                    }, 1000));
-
-                    intervals.push(setInterval(() => showBebek.value = !showBebek.value, 10000));
-                    intervals.push(setInterval(fetchSocData, 10000));
-                });
-
-                onUnmounted(() => {
-                    intervals.forEach(clearInterval);
-                    if (terminalConnection) terminalConnection.stop(); // Matikan socket jika tutup halaman
-                });
-
-
-
-
-                return { isTerminalLive, showBebek, epsChartRef,currentEps,locationName, weather, clockHands, clocks, date, shift, soc, nextPrayer, prayerTimes, modal, newsFeed, chartRef, sysLogs, isLoadingData, odometerTickets, incidentModal, initAudioContext, formatTime, getSevClass, toggleFullScreen, closeModal, escapeHtml, openIncidentDetail, closeIncidentDetail, isolateAttacker };
-            }
-        }).mount('#app');
-    </script>
+    <script src="/js/dashboard-app.js"></script>
 </body>
 </html>

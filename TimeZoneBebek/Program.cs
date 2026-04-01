@@ -19,9 +19,10 @@ builder.Services.AddCors(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
-builder.Services.AddScoped<IncidentService>(); 
+builder.Services.AddScoped<IncidentService>();
 builder.Services.AddHostedService<ElasticWorker>();
-builder.Services.AddSingleton<TimeZoneBebek.Services.ElasticEpsService>();
+builder.Services.AddSingleton<ElasticEpsService>();
+builder.Services.AddSingleton<MonitoringState>();
 
 // Rate Limiting (Security)
 builder.Services.AddRateLimiter(options =>
@@ -44,7 +45,7 @@ var app = builder.Build();
 // ==========================================
 // 2. MIDDLEWARE PIPELINE
 // ==========================================
-app.UseCors("AllowAll");
+app.UseCors();
 
 // Middleware Security & API Key
 app.Use(async (context, next) =>

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "INC-20260106-1354-4FAC",
+    "date": "2026-01-06T13:54:14.2772063+07:00",
+    "title": "React Js Remote Execution",
+    "severity": "LOW",
+    "attacker": "1.1.1.1",
+    "summary": "",
+    "tags": [],
+    "aiAnalysis": null
+  },
+  {
+    "id": "INC-20260106-1144",
+    "date": "2026-01-06T11:44:07.3542177+07:00",
+    "title": "Anomali",
+    "severity": "LOW",
+    "attacker": "1.1.1.1",
+    "summary": "",
+    "tags": [],
+    "aiAnalysis": "\n\u003C|begin_of_box|\u003E\u003Ch3\u003E\uD83D\uDEE1\uFE0F ATTACK VECTOR ANALYSIS\u003C/h3\u003E\n\u003Cp\u003EThe incident involves an attacker with IP address \u003Cb\u003E1.1.1.1\u003C/b\u003E attempting to interact with Anomali platform. Based on the limited information, this appears to be a potential reconnaissance or credential stuffing attack targeting the Anomali interface. The attacker may be attempting to gather intelligence about the organization\u0027s threat detection capabilities or gain unauthorized access to the threat intelligence platform.\u003C/p\u003E\n\n\u003Ch3\u003E\u26A0\uFE0F BUSINESS \u0026 SYSTEM IMPACT\u003C/h3\u003E\n\u003Cp\u003EIf successful, this attack could lead to:\u003C/p\u003E\n\u003Cul\u003E\n  \u003Cli\u003EUnauthorized access to sensitive threat intelligence data\u003C/li\u003E\n  \u003Cli\u003ECompromise of the organization\u0027s security monitoring capabilities\u003C/li\u003E\n  \u003Cli\u003EPotential for data exfiltration of threat intelligence feeds and indicators\u003C/li\u003E\n  \u003Cli\u003EDisruption of security operations if the attacker gains control of the Anomali instance\u003C/li\u003E\n  \u003Cli\u003EReputational damage if the breach becomes public\u003C/li\u003E\n\u003C/ul\u003E\n\n\u003Ch3\u003E\u2705 REMEDIATION STEPS\u003C/h3\u003E\n\u003Cul\u003E\n  \u003Cli\u003EBlock the attacker IP \u003Cb\u003E1.1.1.1\u003C/b\u003E at network perimeter and firewall level\u003C/li\u003E\n  \u003Cli\u003EReview Anomali access logs for any successful or failed authentication attempts\u003C/li\u003E\n  \u003Cli\u003EImplement multi-factor authentication for all Anomali user accounts\u003C/li\u003E\n  \u003Cli\u003EUpdate Anomali to the latest security patches and review configuration settings\u003C/li\u003E\n  \u003Cli\u003EConduct a security audit of Anomali integration points and API access controls\u003C/li\u003E\n\u003C/ul\u003E\u003C|end_of_box|\u003E"
+  },
+  {
+    "id": null,
+    "date": "0001-01-01T00:00:00",
+    "title": null,
+    "severity": null,
+    "attacker": null,
+    "summary": null,
+    "tags": null,
+    "aiAnalysis": null
+  },
+  {
+    "id": null,
+    "date": "0001-01-01T00:00:00",
+    "title": null,
+    "severity": null,
+    "attacker": null,
+    "summary": null,
+    "tags": null,
+    "aiAnalysis": null
+  }
+]

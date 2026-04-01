@@ -1,0 +1,65 @@
+[
+  {
+    "id": "5d430703-9a50-4d59-a786-382979a7d441",
+    "date": "2026-01-30 14:27",
+    "targetUrl": "https://mrpn.bappenas.go.id/",
+    "templateName": "AI Report",
+    "status": "ready",
+    "downloadLink": "https://docs.google.com/document/d/1XiORjJ2lQU7rYwjzlH2BXfA4orkUe3rosL7L-iiO7Sg",
+    "environment": "PROD"
+  },
+  {
+    "id": "7f55c35a-f481-4ac3-b1d4-3885c12a9102",
+    "date": "2026-01-30 14:20",
+    "targetUrl": "https://ewsinflasi.bappenas.go.id/",
+    "templateName": "AI Report",
+    "status": "ready",
+    "downloadLink": "https://docs.google.com/document/d/1Di3jrTHxLUkzJPQFbD0j8IyYJ5nlLPd71m1hkvdupdw",
+    "environment": "DEV"
+  },
+  {
+    "id": "1765c21f-a0f3-42be-9611-69dcf9b5bc65",
+    "date": "2026-01-30 13:56",
+    "targetUrl": "https://ditkumlasi.bappenas.go.id/",
+    "templateName": "Laporan VA",
+    "status": "ready",
+    "downloadLink": "https://docs.google.com/document/d/1BI4TJQRcjxPQvfe83IsJYroj6zxVHf7rTKuPSqqeRYc",
+    "environment": null
+  },
+  {
+    "id": "f7419605-1daa-46c8-aee2-922f751618cb",
+    "date": "2026-01-30 13:50",
+    "targetUrl": "https://csirt.bappenas.go.id/",
+    "templateName": "Laporan VA",
+    "status": "ready",
+    "downloadLink": "https://docs.google.com/document/d/1FFQB-Ws8I_xsrDlbUZkzfFEKjwYxhxEFGul2nyr2V74",
+    "environment": null
+  },
+  {
+    "id": "883c2656-6748-4382-a999-753cc8237e95",
+    "date": "2026-01-30 13:48",
+    "targetUrl": "https://csirt.bappenas.go.id/",
+    "templateName": "Laporan VA",
+    "status": "ready",
+    "downloadLink": "",
+    "environment": null
+  },
+  {
+    "id": "a6e93131-6c9a-44bf-a342-1d309eb775d6",
+    "date": "2026-01-29 15:38",
+    "targetUrl": "https://investasibumn.bappenas.go.id/",
+    "templateName": "Template ID: 11111111...",
+    "status": "processing",
+    "downloadLink": "#",
+    "environment": null
+  },
+  {
+    "id": "73442177-9f30-48bc-b0da-95ca170cae68",
+    "date": "2026-01-29 15:35",
+    "targetUrl": "https://investasibumn.bappenas.go.id/",
+    "templateName": "Template ID: 11111111...",
+    "status": "processing",
+    "downloadLink": "#",
+    "environment": null
+  }
+]
