@@ -97,4 +97,33 @@ namespace TimeZoneBebek.Models
         public List<string> Ids { get; set; } = new();
         public string Status { get; set; } = IncidentStatuses.Resolved;
     }
+
+    public class IncidentArchiveQuery
+    {
+        public string? Search { get; set; }
+        public string Severity { get; set; } = "ALL";
+        public string Status { get; set; } = "ALL";
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 25;
+    }
+
+    public class IncidentArchiveSummary
+    {
+        public int OpenCount { get; set; } = 0;
+        public int CriticalCount { get; set; } = 0;
+        public int AssignedCount { get; set; } = 0;
+        public int ResolvedCount { get; set; } = 0;
+        public int TotalCount { get; set; } = 0;
+        public int FilteredCount { get; set; } = 0;
+    }
+
+    public class IncidentArchivePage
+    {
+        public List<Incident> Items { get; set; } = [];
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+        public int TotalCount { get; set; }
+        public int TotalPages { get; set; }
+        public IncidentArchiveSummary Summary { get; set; } = new();
+    }
 }

@@ -27,29 +27,106 @@
     <div id="app" class="container" @click="unlockAudio">
         <div class="header-box" style="border-bottom: 2px solid var(--cyan); padding-bottom: 20px; margin-bottom: 30px;">
             <div style="display:flex; justify-content:space-between; gap:18px; align-items:flex-start; flex-wrap:wrap;">
-                <div>
+                <div class="geo-header-main">
                     <h1 class="page-title glitch" data-text="GEO ATTACKER 3D">GEO ATTACKER 3D</h1>
                     <div class="mode-toggle" style="margin-top:12px;">
                         <button class="mode-btn" :class="{ active: viewMode === 'dashboard' }" @click="setViewMode('dashboard')">DASHBOARD MODE</button>
                         <button class="mode-btn" :class="{ active: viewMode === 'analytic' }" @click="setViewMode('analytic')">ANALYTIC MODE</button>
                     </div>
                 </div>
-                <div style="text-align:right; margin-top:10px;">
+                <div class="geo-header-status" style="text-align:right; margin-top:10px;">
                     <span style="color:#666; margin-right:15px; font-family:'JetBrains Mono'; font-size:0.9rem;" :style="{ color: latencyColor }">LATENCY {{ latencyMs }}ms</span>
                     <span class="status-blink" :style="{ color: statusColor }" style="margin-right:15px; font-family:'Orbitron';">{{ statusText }}</span>
-                    <button class="cyber-btn btn-hunt" :class="{ active: isAudioEnabled }" @click="toggleAudio" style="margin-right:10px;">{{ isAudioEnabled ? 'AUDIO ON' : 'AUDIO OFF' }}</button>
-                    <button class="cyber-btn btn-hunt" :class="{ active: isAutoHunt }" @click="toggleLiveMode">AUTO-HUNT: {{ isAutoHunt ? 'ON' : 'OFF' }}</button>
+                    <div class="geo-header-controls" style="display:inline-flex; gap:10px; align-items:center;">
+                        <button class="cyber-btn btn-hunt" :class="{ active: isAudioEnabled }" @click="toggleAudio">{{ isAudioEnabled ? 'AUDIO ON' : 'AUDIO OFF' }}</button>
+                        <button class="cyber-btn btn-hunt" :class="{ active: isAutoHunt }" @click="toggleLiveMode">AUTO-HUNT: {{ isAutoHunt ? 'ON' : 'OFF' }}</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="search-box">
+        <div class="search-box" v-show="viewMode === 'analytic'">
             <input type="text" class="cyber-input" placeholder="ENTER TARGET IP..." v-model="ipInput" @keyup.enter="manualTrace" :disabled="isAutoHunt">
             <button class="cyber-btn" @click="manualTrace" :disabled="isAutoHunt || !ipInput">INITIATE SCAN</button>
             <button class="cyber-btn btn-clear" @click="resetGlobe">RESET</button>
         </div>
 
-        <div :class="viewMode === 'analytic' ? 'geo-layout' : 'geo-main'">
+        <div v-if="viewMode === 'dashboard'" class="dashboard-layout">
+            <div class="geo-main dashboard-stage">
+                <div class="dashboard-kpi-strip">
+                    <div class="dashboard-kpi">
+                        <span class="kpi-label">Total Hits</span>
+                        <div class="kpi-value">{{ formatCount(dashboardSummary.totalHits) }}</div>
+                    </div>
+                    <div class="dashboard-kpi">
+                        <span class="kpi-label">Active Sources</span>
+                        <div class="kpi-value">{{ dashboardSummary.activeSources }}</div>
+                    </div>
+                    <div class="dashboard-kpi">
+                        <span class="kpi-label">Critical</span>
+                        <div class="kpi-value" style="color:var(--red)">{{ dashboardSummary.criticalCount }}</div>
+                    </div>
+                    <div class="dashboard-kpi">
+                        <span class="kpi-label">Top Country</span>
+                        <div class="kpi-value">{{ dashboardSummary.topCountry }}</div>
+                    </div>
+                </div>
+                <div id="globeViz"></div>
+                <div class="geo-grid dashboard-hud" v-show="hud.visible">
+                    <div class="card hud-card"><span class="label">Target</span><div class="value" style="color:var(--cyan)">{{ hud.ip }}</div></div>
+                    <div class="card hud-card"><span class="label">Location</span><div class="value">{{ hud.city }}</div></div>
+                    <div class="card hud-card"><span class="label">Coord</span><div class="value">{{ hud.coord }}</div></div>
+                </div>
+            </div>
+
+            <aside class="dashboard-side">
+                <div class="intel-box dashboard-box" style="display:block;">
+                    <div class="intel-header">
+                        <div class="intel-title">>> ACTIVE THREAT FEED</div>
+                        <div style="font-size:0.7rem; color:#708885;">TOP LIVE SOURCES</div>
+                    </div>
+                    <div class="dashboard-feed-list">
+                        <div v-for="t in dashboardFeed" :key="t.signature" class="dashboard-feed-item" @click="inspectThreat(t)">
+                            <div class="dashboard-feed-head">
+                                <div>
+                                    <div class="dashboard-feed-ip">{{ t.ip }}</div>
+                                    <div class="dashboard-feed-meta">{{ t.countryLabel }} | {{ t.typeLabel }}</div>
+                                </div>
+                                <div class="dashboard-feed-flag">
+                                    <span :class="`fi fi-${t.cc}`"></span>
+                                </div>
+                            </div>
+                            <div class="dashboard-feed-foot">
+                                <span :style="{ color: t.color }">{{ t.severity }}</span>
+                                <span>{{ formatCount(t.count) }} hits</span>
+                            </div>
+                        </div>
+                        <div v-if="dashboardFeed.length === 0" class="dashboard-feed-empty">Awaiting filtered live feed...</div>
+                    </div>
+                </div>
+
+                <div class="intel-box dashboard-box" style="display:block;">
+                    <div class="intel-header">
+                        <div class="intel-title">>> THREAT ORIGIN</div>
+                        <div style="font-size:0.7rem; color:#708885;">CONTROLLED VIEW</div>
+                    </div>
+                    <div style="padding:14px 16px;">
+                        <div v-if="countryStats.length === 0" class="dashboard-feed-empty">Awaiting country aggregation...</div>
+                        <div v-for="stat in countryStats.slice(0, 5)" :key="stat.country" class="dashboard-stat-row">
+                            <div class="dashboard-stat-head">
+                                <span><span :class="`fi fi-${stat.cc}`"></span> {{ stat.country }}</span>
+                                <span :style="{ color: stat.color }">{{ formatCount(stat.count) }}</span>
+                            </div>
+                            <div class="dashboard-stat-bar">
+                                <div :style="{ width: stat.percent + '%', background: stat.color }"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <div v-else :class="viewMode === 'analytic' ? 'geo-layout' : 'geo-main'">
             <div class="geo-main">
                 <div id="globeViz"></div>
                 <div class="geo-grid" v-show="hud.visible">
@@ -129,7 +206,7 @@
             </div>
         </div>
 
-        <div class="dashboard-panels">
+        <div class="dashboard-panels" v-show="viewMode === 'analytic'">
             <div class="intel-box" style="display:block;">
                 <div class="intel-header">
                     <div class="intel-title">>> THREAT ORIGIN STATS</div>
@@ -266,6 +343,6 @@
         </div>
     </div>
 
-    <script src="/js/geo-app.js"></script>
+    <script src="/js/geo-app.js?v=20260406a"></script>
 </body>
 </html>

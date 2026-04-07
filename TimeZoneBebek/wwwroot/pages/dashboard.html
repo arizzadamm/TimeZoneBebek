@@ -251,12 +251,20 @@
             margin-bottom: 18px;
         }
 
+        .dash-brand-header .title-switcher-container {
+            min-height: 66px;
+            height: auto;
+            overflow: visible;
+            align-items: flex-start;
+            justify-content: flex-start;
+        }
+
         .dash-brand-title {
             margin: 0;
-            font-size: clamp(1.9rem, 4vw, 3.2rem);
+            font-size: clamp(1.55rem, 3.1vw, 2.7rem);
             font-weight: 900;
             font-family: 'Orbitron', sans-serif;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.05em;
             color: #effffe;
             text-transform: uppercase;
             text-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
@@ -458,6 +466,77 @@
             background: var(--dash-danger);
         }
 
+        .incident-alert-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(6, 0, 0, 0.58);
+            z-index: 9998;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .incident-alert-box {
+            width: min(92vw, 560px);
+            padding: 24px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 95, 109, 0.65);
+            background: linear-gradient(180deg, rgba(31, 8, 12, 0.96), rgba(12, 4, 7, 0.98));
+            box-shadow: 0 0 48px rgba(255, 95, 109, 0.28);
+            color: #fff7f8;
+            animation: incidentPulse 1.6s ease-in-out infinite;
+        }
+
+        .incident-alert-kicker {
+            color: #ffc371;
+            font-size: 0.75rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .incident-alert-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.15rem, 2vw, 1.7rem);
+            margin-bottom: 12px;
+            color: #fff;
+        }
+
+        .incident-alert-message {
+            color: #f3d9dc;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .incident-alert-footer {
+            margin-top: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .incident-alert-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 195, 113, 0.32);
+            background: rgba(255, 195, 113, 0.08);
+            color: #ffc371;
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        @keyframes incidentPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(255, 95, 109, 0.18); }
+            50% { transform: scale(1.012); box-shadow: 0 0 56px rgba(255, 95, 109, 0.34); }
+        }
+
         .ops-layout {
             display: grid;
             grid-template-columns: 1.15fr 1fr;
@@ -531,17 +610,279 @@
             border-radius: 10px;
         }
 
+        body.soc-dashboard-mode .sidebar,
+        body.soc-dashboard-mode .menu-btn,
+        body.soc-dashboard-mode .overlay {
+            display: none !important;
+        }
+
+        body.soc-dashboard-mode .content {
+            margin-left: 0 !important;
+            width: 100% !important;
+            max-width: none !important;
+        }
+
+        .dash-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .dash-top-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .dash-mode-toggle {
+            display: inline-flex;
+            gap: 8px;
+            padding: 6px;
+            border-radius: 999px;
+            border: 1px solid var(--dash-border);
+            background: rgba(3, 10, 12, 0.82);
+            box-shadow: var(--dash-shadow-glow);
+        }
+
+        .dash-mode-chip {
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--dash-text-muted);
+            font-family: 'Orbitron';
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+            padding: 8px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .dash-mode-chip.active {
+            color: #04110f;
+            background: linear-gradient(90deg, #7ce8f1 0%, #d6fffd 100%);
+            box-shadow: 0 0 18px rgba(124, 232, 241, 0.2);
+        }
+
+        .dash-wallboard {
+            display: grid;
+            gap: 18px;
+            margin-top: 18px;
+        }
+
+        .dash-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .dash-kpi-card {
+            padding: 16px 18px;
+            border-radius: 16px;
+            border: 1px solid var(--dash-border);
+            background: linear-gradient(180deg, rgba(7, 17, 22, 0.92), rgba(4, 11, 14, 0.96));
+            box-shadow: var(--dash-shadow), var(--dash-shadow-glow);
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .dash-kpi-label {
+            color: var(--dash-text-muted);
+            font-size: 0.68rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .dash-kpi-value {
+            font-family: 'Orbitron';
+            font-size: clamp(1.5rem, 2.6vw, 2.5rem);
+            color: var(--dash-text);
+            line-height: 1.1;
+        }
+
+        .dash-kpi-meta {
+            color: #778886;
+            font-size: 0.76rem;
+        }
+
+        .dash-main-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
+            gap: 18px;
+            align-items: start;
+        }
+
+        .dash-wallboard-box {
+            border-radius: var(--dash-radius);
+            border: 1px solid var(--dash-border);
+            background: linear-gradient(180deg, rgba(5, 15, 18, 0.92), rgba(3, 9, 12, 0.9));
+            box-shadow: var(--dash-shadow), var(--dash-shadow-glow);
+        }
+
+        .dash-box-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 18px 12px;
+            border-bottom: 1px solid rgba(0,255,204,0.12);
+        }
+
+        .dash-box-title {
+            font-family: 'Orbitron';
+            font-size: 0.88rem;
+            color: #dffefd;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .dash-box-subtitle {
+            color: #667876;
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .dash-prayer-card {
+            border-color: rgba(0,255,153,0.24);
+            background: linear-gradient(180deg, rgba(2, 17, 13, 0.78), rgba(3, 11, 9, 0.9));
+        }
+
+        .dash-feed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 14px 16px 16px;
+        }
+
+        .dash-feed-item {
+            border-radius: 14px;
+            border: 1px solid rgba(0,255,204,0.1);
+            background: rgba(4, 10, 13, 0.7);
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .dash-feed-head,
+        .dash-feed-foot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .dash-feed-title {
+            color: #f2fffd;
+            font-size: 0.9rem;
+            line-height: 1.35;
+        }
+
+        .dash-feed-meta {
+            color: #7f9190;
+            font-size: 0.72rem;
+        }
+
+        .dash-feed-empty {
+            padding: 22px 16px;
+            color: #6f8180;
+            text-align: center;
+            font-size: 0.82rem;
+        }
+
+        .dash-ops-inline {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            padding: 0 16px 16px;
+        }
+
+        .dash-ops-pill {
+            border-radius: 12px;
+            border: 1px solid rgba(0,255,204,0.1);
+            background: rgba(3, 10, 13, 0.7);
+            padding: 12px 14px;
+        }
+
+        .dash-ops-pill .pill-label {
+            color: #738583;
+            font-size: 0.66rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .dash-ops-pill .pill-value {
+            margin-top: 8px;
+            font-family: 'Orbitron';
+            font-size: 1.2rem;
+            color: #f4fffd;
+        }
+
+        .dash-ops-pill .pill-meta {
+            margin-top: 6px;
+            color: #6d807d;
+            font-size: 0.72rem;
+        }
+
+        .dash-terminal-surface {
+            padding: 16px 18px 18px;
+            min-height: 420px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dash-terminal-feed {
+            margin-top: 8px;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            color: #55ff8e;
+        }
+
+        .dash-terminal-line {
+            border-bottom: 1px dashed rgba(0,255,102,0.14);
+            padding-bottom: 6px;
+            word-break: break-word;
+        }
+
         @media (max-width: 1100px) {
             .source-health-strip,
-            .ops-layout {
+            .ops-layout,
+            .dash-ops-inline {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .dash-kpi-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .dash-main-grid {
                 grid-template-columns: 1fr;
             }
         }
 
         @media (max-width: 760px) {
+            .dash-header-row,
+            .dash-top-controls,
+            .dash-kpi-grid,
             .source-health-strip,
-            .ops-stat-grid {
+            .ops-stat-grid,
+            .dash-ops-inline {
                 grid-template-columns: 1fr;
+            }
+
+            .dash-brand-header .title-switcher-container {
+                min-height: 56px;
             }
         }
     </style>
@@ -575,11 +916,22 @@
 <div id="app" class="content" :class="{ 'theme-critical': soc.defconLevel === 'DEFCON 1' || isRealTraffic }" @click="initAudioContext">
 
     <div class='brand-header dash-brand-header'>
-        <div class="title-switcher-container">
-            <h1 class="brand-title dash-brand-title glitch switching-title" data-text="BAPPENAS CSIRT" :class="{ active: !showBebek }">BAPPENAS CSIRT</h1>
-            <h1 class="brand-title dash-brand-title alt glitch switching-title" data-text="BEBEK PINTAR" :class="{ active: showBebek }">BEBEK PINTAR</h1>
+        <div class="dash-header-row">
+            <div>
+                <div class="title-switcher-container">
+                    <h1 class="brand-title dash-brand-title glitch switching-title" data-text="BAPPENAS CSIRT" :class="{ active: !showBebek }">BAPPENAS CSIRT</h1>
+                    <h1 class="brand-title dash-brand-title alt glitch switching-title" data-text="BEBEK PINTAR" :class="{ active: showBebek }">BEBEK PINTAR</h1>
+                </div>
+                <div class='brand-subtitle'><span id='typed-output'></span></div>
+            </div>
+            <div class="dash-top-controls">
+                <div class="dash-mode-toggle">
+                    <button class="dash-mode-chip" :class="{ active: viewMode === 'dashboard' }" @click="typeof setViewMode === 'function' ? setViewMode('dashboard') : (viewMode = 'dashboard')">Dashboard</button>
+                    <button class="dash-mode-chip" :class="{ active: viewMode === 'analytic' }" @click="typeof setViewMode === 'function' ? setViewMode('analytic') : (viewMode = 'analytic')">Analytic</button>
+                </div>
+                <button class="cyber-btn" @click="toggleFullScreen">WAR ROOM</button>
+            </div>
         </div>
-        <div class='brand-subtitle'><span id='typed-output'></span></div>
     </div>
 
     <div class='time-section' style="display:flex; justify-content:center;">
@@ -620,7 +972,113 @@
         </div>
     </div>
 
-    <div class='grid'>
+    <div v-if="viewMode === 'dashboard'" class="dash-wallboard">
+        <div class="dash-kpi-grid">
+            <div class="dash-kpi-card">
+                <div class="dash-kpi-label">Threat Level</div>
+                <div class="dash-kpi-value" :style="{ color: soc.defconColor }">{{ soc.defconLevel }}</div>
+                <div class="dash-kpi-meta">{{ soc.defconDesc }}</div>
+            </div>
+            <div class="dash-kpi-card action-card" @click="openArchiveList">
+                <div class="dash-kpi-label">Open Tickets</div>
+                <div class="dash-kpi-value" style="color:var(--yellow)">{{ Math.round(odometerTickets) }}</div>
+                <div class="dash-kpi-meta">Critical {{ soc.criticalOpenTickets }} · High {{ soc.highOpenTickets }}</div>
+            </div>
+            <div class="dash-kpi-card">
+                <div class="dash-kpi-label">Event Rate</div>
+                <div class="dash-kpi-value" :style="{ color: isRealTraffic ? 'var(--red)' : 'var(--cyan)' }">{{ currentEps }}</div>
+                <div class="dash-kpi-meta">{{ currentEventsLastMinute }} events / last minute</div>
+            </div>
+            <div class="dash-kpi-card">
+                <div class="dash-kpi-label">Top Threat Actor</div>
+                <div class="dash-kpi-value" style="font-size:clamp(1.1rem, 2vw, 1.8rem)">{{ soc.topAttacker }}</div>
+                <div class="dash-kpi-meta">Share {{ soc.topAttackerPct }}%</div>
+            </div>
+            <div class="dash-kpi-card dash-prayer-card">
+                <div class="dash-kpi-label" style="color:var(--green)">Next Prayer</div>
+                <div class="dash-kpi-value" style="color:var(--green); font-size:clamp(1.1rem, 2vw, 1.8rem)">{{ nextPrayer.name }}</div>
+                <div class="dash-kpi-meta" :style="{ color: nextPrayer.isNear ? 'var(--red)' : '#8eb7ad' }">{{ nextPrayer.time }} · {{ nextPrayer.countdown }}</div>
+            </div>
+        </div>
+
+        <div class="source-health-strip token-section">
+            <div v-for="source in sortedHealthSources" :key="source.key" class="source-chip" :class="source.cssClass">
+                <div class="source-chip-main">
+                    <div class="source-chip-label">{{ source.label }}</div>
+                    <div class="source-chip-state">{{ source.state }}</div>
+                    <div class="source-chip-meta">{{ source.meta }}</div>
+                </div>
+                <div class="source-chip-dot"></div>
+            </div>
+        </div>
+
+        <div class="dash-main-grid">
+            <div class="dash-wallboard-box">
+                <div class="dash-box-header">
+                    <div class="dash-box-title">System Terminal Log</div>
+                    <div class="dash-box-subtitle">Elastic stream monitor</div>
+                </div>
+                <div class="dash-terminal-surface">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px;">
+                        <span class="dash-kpi-label" style="color:var(--green);">Live Console</span>
+                        <span class="status-blink" :style="{ color: isTerminalLive ? 'var(--green)' : 'var(--yellow)' }" style="font-size:0.74rem; font-family:'Orbitron';">
+                            ● {{ isTerminalLive ? 'LIVE' : 'CONNECTING' }}
+                        </span>
+                    </div>
+                    <div class="dash-terminal-feed">
+                        <div v-for="(log, index) in sysLogs" :key="index" class="dash-terminal-line">
+                            <span style="opacity:0.68;">root@csirt:~#</span> <span v-html="log"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dash-wallboard-box">
+                <div class="dash-box-header">
+                    <div class="dash-box-title">Live Incident Feed</div>
+                    <div class="dash-box-subtitle">Prioritized stream</div>
+                </div>
+                <div v-if="dashboardFeed.length === 0" class="dash-feed-empty">Tidak ada incident aktif yang cocok dengan prioritas saat ini.</div>
+                <div v-else class="dash-feed-list">
+                    <div v-for="inc in dashboardFeed" :key="inc.id" class="dash-feed-item" @click="openIncidentDetail(inc)" style="cursor:pointer;">
+                        <div class="dash-feed-head">
+                            <span :class="getSevClass(inc.severity)">{{ inc.severity }}</span>
+                            <span class="dash-feed-meta">{{ formatTime(inc.date) }}</span>
+                        </div>
+                        <div class="dash-feed-title">{{ escapeHtml(inc.title) }}</div>
+                        <div class="dash-feed-foot">
+                            <span class="dash-feed-meta">{{ escapeHtml(inc.attacker || 'UNKNOWN') }}</span>
+                            <span class="dash-feed-meta">{{ inc.status }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dash-ops-inline">
+                    <div class="dash-ops-pill">
+                        <div class="pill-label">Shift Timer</div>
+                        <div class="pill-value" :style="{ color: shift.isOffDuty ? '#778280' : 'var(--cyan)' }">{{ shift.timerText }}</div>
+                        <div class="pill-meta">Since 08:00 WIB</div>
+                    </div>
+                    <div class="dash-ops-pill">
+                        <div class="pill-label">Terminal</div>
+                        <div class="pill-value" :style="{ color: isTerminalLive ? 'var(--green)' : 'var(--yellow)' }">{{ isTerminalLive ? 'LIVE' : 'SYNC' }}</div>
+                        <div class="pill-meta">Elastic stream monitor</div>
+                    </div>
+                    <div class="dash-ops-pill">
+                        <div class="pill-label">Incident Ingest</div>
+                        <div class="pill-value" :style="{ color: socHealth.threatWebhookHealthy ? 'var(--green)' : 'var(--yellow)' }">{{ socHealth.threatWebhookHealthy ? 'ONLINE' : 'EXTERNAL' }}</div>
+                        <div class="pill-meta">{{ formatRelativeTime(socHealth.lastWebhookSuccessUtc) }}</div>
+                    </div>
+                    <div class="dash-ops-pill">
+                        <div class="pill-label">Broadcast</div>
+                        <div class="pill-value" :style="{ color: socHealth.feedHealthy ? 'var(--green)' : 'var(--yellow)' }">{{ socHealth.feedHealthy ? 'SYNCED' : 'STALE' }}</div>
+                        <div class="pill-meta">{{ formatRelativeTime(socHealth.lastBroadcastUtc) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div v-else class='grid'>
         <div class='card alert' :style="{ borderColor: soc.defconColor, boxShadow: soc.defconShadow }" style="text-align:center;">
             <span class='label'>THREAT LEVEL</span>
             <div v-if="isLoadingData" class="skeleton-pulse" style="height:40px; width:150px; margin: 10px auto;"></div>
@@ -699,7 +1157,7 @@
         </div>
     </div>
 
-    <div class="source-health-strip token-section">
+    <div v-if="viewMode === 'analytic'" class="source-health-strip token-section">
         <div v-for="source in healthSources" :key="source.key" class="source-chip" :class="source.cssClass">
             <div class="source-chip-main">
                 <div class="source-chip-label">{{ source.label }}</div>
@@ -710,7 +1168,7 @@
         </div>
     </div>
 
-    <div class="ops-layout">
+    <div v-if="viewMode === 'analytic'" class="ops-layout">
         <div class="intel-box token-section" style="display:block;">
             <div class="intel-header">
                 <div class="intel-title">>> SHIFT HANDOVER</div>
@@ -785,7 +1243,7 @@
         </div>
     </div>
 
-    <div class="incident-feed-box" style="margin-top: 20px;">
+    <div v-if="viewMode === 'analytic'" class="incident-feed-box" style="margin-top: 20px;">
         <div class="feed-header">
             <span>>> LIVE INCIDENT STREAM</span>
             <span class="status-blink" style="color:var(--red);">● PRIORITIZED</span>
@@ -827,7 +1285,19 @@
     </div>
 
     <div class='ticker-wrap'><div class='ticker-label'>THREAT INTEL</div><div class='ticker'><div class='ticker-item' v-if="newsFeed.length === 0">Loading Intelligence Feed...</div><div class='ticker-item' v-for="(news, index) in newsFeed" :key="index"><span style='color:var(--yellow); animation:pulse 1s infinite;'>[NEWS]</span> <a :href="news.link" target='_blank'>{{ news.title }}</a></div></div></div>
-    <div class='fullscreen-btn' @click="toggleFullScreen" title='War Room Mode'>⛶</div>
+
+    <div v-if="incidentAlert.show" class="incident-alert-overlay" @click.self="closeIncidentAlert">
+        <div class="incident-alert-box">
+            <div class="incident-alert-kicker">Incident Alert</div>
+            <div class="incident-alert-title">{{ incidentAlert.title }}</div>
+            <div class="incident-alert-message">{{ incidentAlert.message }}</div>
+            <div class="incident-alert-footer">
+                <div class="incident-alert-pill">{{ incidentAlert.severity }} PRIORITY</div>
+                <div class="incident-alert-pill">{{ incidentAlert.count }} EVENT</div>
+                <button class="cyber-btn btn-red" @click="closeIncidentAlert">ACKNOWLEDGE</button>
+            </div>
+        </div>
+    </div>
 
     <div class="shift-modal" :style="{ display: modal.show ? 'flex' : 'none' }">
         <div class="shift-box" :style="{ borderColor: modal.color, boxShadow: modal.shadow }">
@@ -896,6 +1366,6 @@
     </div>
 
 </div>
-    <script src="/js/dashboard-app.js"></script>
+    <script src="/js/dashboard-app.js?v=20260406a"></script>
 </body>
 </html>

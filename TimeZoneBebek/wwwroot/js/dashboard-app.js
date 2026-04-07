@@ -6,8 +6,10 @@ createApp({
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         const isLoadingData = ref(true);
+        const viewMode = ref(localStorage.getItem("SOC_DASH_VIEW_MODE") || "dashboard");
         const odometerTickets = ref(0);
         const incidentModal = reactive({ show: false, data: null });
+        const incidentAlert = reactive({ show: false, title: "", message: "", severity: "MEDIUM", count: 0 });
         const isTerminalLive = ref(false);
         const authChecked = ref(false);
 
@@ -36,6 +38,13 @@ createApp({
         const modal = reactive({ show: false, type: "", title: "", msg: "", color: "var(--yellow)", shadow: "none", progressWidth: "100%", transition: "none", prayerName: "", imamText: "...", imamColor: "#aaa" });
         let modalTimer = null;
         const flags = { shiftAlerted: false, prayerAlerted: false };
+        const incidentAlertCooldownMs = 45000;
+        const incidentAlertFreshWindowMs = 3 * 60 * 1000;
+        const knownIncidentIds = new Set();
+        let hasHydratedIncidentIds = false;
+        let lastIncidentAlertAt = 0;
+        let incidentAlertTimer = null;
+        let incidentAudio = null;
 
         const newsFeed = ref([]);
         const sysLogs = ref([]);
@@ -87,9 +96,9 @@ createApp({
             },
             {
                 key: "webhook",
-                label: "n8n Webhook",
-                state: socHealth.threatWebhookHealthy ? "READY" : "WAITING",
-                meta: `Last post ${formatRelativeTime(socHealth.lastWebhookSuccessUtc)}`,
+                label: "Incident Ingest",
+                state: socHealth.threatWebhookHealthy ? "EXTERNAL" : "DISABLED",
+                meta: `Last activity ${formatRelativeTime(socHealth.lastWebhookSuccessUtc)}`,
                 cssClass: socHealth.threatWebhookHealthy ? "source-chip-ok" : "source-chip-warn"
             },
             {
@@ -101,6 +110,24 @@ createApp({
             }
         ]));
 
+        const healthPriority = (cssClass) => ({ "source-chip-down": 0, "source-chip-warn": 1, "source-chip-ok": 2 }[cssClass] ?? 3);
+        const sortedHealthSources = computed(() =>
+            [...healthSources.value].sort((a, b) => {
+                const rankDiff = healthPriority(a.cssClass) - healthPriority(b.cssClass);
+                return rankDiff !== 0 ? rankDiff : a.label.localeCompare(b.label);
+            })
+        );
+
+        const dashboardFeed = computed(() =>
+            [...filteredRecentIncidents.value]
+                .sort((a, b) => {
+                    const priorityDiff = getIncidentPriorityScore(b) - getIncidentPriorityScore(a);
+                    if (priorityDiff !== 0) return priorityDiff;
+                    return new Date(b.date).getTime() - new Date(a.date).getTime();
+                })
+                .slice(0, 8)
+        );
+
         watch(() => soc.openTickets, (newVal) => {
             let start = odometerTickets.value;
             const duration = 1000;
@@ -111,6 +138,15 @@ createApp({
                 if (progress < 1) requestAnimationFrame(animateCount);
             };
             requestAnimationFrame(animateCount);
+        });
+
+        const syncDashboardMode = () => {
+            document.body.classList.toggle("soc-dashboard-mode", viewMode.value === "dashboard");
+        };
+
+        watch(viewMode, (mode) => {
+            localStorage.setItem("SOC_DASH_VIEW_MODE", mode);
+            syncDashboardMode();
         });
 
         let terminalConnection = null;
@@ -185,8 +221,26 @@ createApp({
         };
 
         const initAudioContext = () => { if (audioCtx.state === "suspended") audioCtx.resume(); };
+        const initIncidentAudio = () => {
+            if (!incidentAudio) {
+                incidentAudio = new Audio("/assets/sounds/alarm.mp3");
+                incidentAudio.preload = "auto";
+                incidentAudio.volume = 0.45;
+            }
+
+            return incidentAudio;
+        };
         const playTone = (f, s, d, t = "sine", v = 0.1) => { const n = audioCtx.currentTime; const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type = t; o.frequency.setValueAtTime(f, n + s); g.gain.setValueAtTime(0, n + s); g.gain.linearRampToValueAtTime(v, n + s + 0.05); g.gain.exponentialRampToValueAtTime(0.001, n + s + d); o.connect(g); g.connect(audioCtx.destination); o.start(n + s); o.stop(n + s + d); };
         const playAlertSound = (t) => { initAudioContext(); if (t === "START") { [261.6, 329.6, 392, 493.8].forEach((f, i) => playTone(f, i * 0.1, 0.2, "triangle")); playTone(523.2, 0.4, 0.8, "square", 0.05); } else if (t === "END") { [880, 659.2, 523.2].forEach((f, i) => playTone(f, i * 0.3, 0.6)); playTone(392, 0.9, 1.5); } else if (t === "PRAYER") { playTone(659.25, 0, 1.5, "sine", 0.1); playTone(523.25, 0.6, 2.0, "sine", 0.1); const s = 2.5; [164.81, 329.63, 349.23, 415.30, 329.63].forEach((f, i) => playTone(f, s + (i < 2 ? 0 : i < 3 ? 4 : i < 4 ? 5.5 : 8.5), i < 2 ? 4 : i < 3 ? 1.5 : i < 4 ? 3 : 5, "triangle", 0.15)); } };
+        const playIncidentAlert = async () => {
+            try {
+                initAudioContext();
+                const audio = initIncidentAudio();
+                audio.currentTime = 0;
+                await audio.play();
+            } catch (e) {
+            }
+        };
 
         const fW = new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
         const fWa = new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Makassar", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
@@ -312,10 +366,78 @@ createApp({
             try {
                 const res = await fetch("/api/incidents", { headers: { "X-API-KEY": API_KEY } });
                 if (!res.ok) throw new Error();
-                allIncidents.value = await res.json();
+                const incidents = await res.json();
+                allIncidents.value = incidents;
+                processIncomingIncidentAlerts(incidents);
                 hydrateHandover();
             } catch (e) {
             }
+        };
+        const processIncomingIncidentAlerts = (incidents) => {
+            const nextIds = new Set(incidents.filter(i => i?.id).map(i => i.id));
+            if (!hasHydratedIncidentIds) {
+                nextIds.forEach(id => knownIncidentIds.add(id));
+                hasHydratedIncidentIds = true;
+                return;
+            }
+
+            const freshIncidents = incidents
+                .filter(inc => inc?.id && !knownIncidentIds.has(inc.id))
+                .filter(inc => {
+                    const ts = new Date(inc.date).getTime();
+                    return Number.isFinite(ts) && (Date.now() - ts) <= incidentAlertFreshWindowMs;
+                })
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+            nextIds.forEach(id => knownIncidentIds.add(id));
+            if (freshIncidents.length === 0)
+                return;
+
+            const now = Date.now();
+            if ((now - lastIncidentAlertAt) < incidentAlertCooldownMs)
+                return;
+
+            lastIncidentAlertAt = now;
+            triggerIncidentAlert(freshIncidents);
+        };
+        const triggerIncidentAlert = (incidents) => {
+            const [latest] = incidents;
+            incidentAlert.show = true;
+            incidentAlert.count = incidents.length;
+            incidentAlert.severity = latest.severity || "MEDIUM";
+            incidentAlert.title = incidents.length === 1
+                ? `INCIDENT BARU: ${latest.title || latest.id || "UNIDENTIFIED"}`
+                : `${incidents.length} INCIDENT BARU MASUK`;
+            incidentAlert.message = incidents.length === 1
+                ? `${latest.attacker || "UNKNOWN"} -> ${latest.affectedAsset || latest.source || "UNSPECIFIED TARGET"}`
+                : `${latest.attacker || "UNKNOWN"} dan ${incidents.length - 1} event lain menunggu triage`;
+
+            playIncidentAlert();
+            Toastify({
+                text: incidents.length === 1
+                    ? `Incident baru: ${latest.title || latest.id}`
+                    : `${incidents.length} incident baru diterima`,
+                duration: 5000,
+                gravity: "top",
+                position: "right",
+                style: {
+                    background: "linear-gradient(to right, #ff5f6d, #ffc371)",
+                    color: "#000",
+                    fontFamily: "Orbitron"
+                }
+            }).showToast();
+
+            if (incidentAlertTimer)
+                clearTimeout(incidentAlertTimer);
+
+            incidentAlertTimer = setTimeout(() => {
+                incidentAlert.show = false;
+            }, 12000);
+        };
+        const closeIncidentAlert = () => {
+            incidentAlert.show = false;
+            if (incidentAlertTimer)
+                clearTimeout(incidentAlertTimer);
         };
 
         const fetchHealth = async () => {
@@ -421,6 +543,7 @@ createApp({
         const openArchiveList = () => {
             window.location.href = "/archive";
         };
+        const setViewMode = (mode) => { viewMode.value = mode; };
         const toggleFullScreen = () => !document.fullscreenElement ? document.documentElement.requestFullscreen() : document.exitFullscreen();
         const animateJackpot = (fV) => { const p = imamPool.value.length > 0 ? imamPool.value : ["SEARCHING..."]; let c = 0; const ts = 90; const id = setInterval(() => { modal.imamText = p[Math.floor(Math.random() * p.length)]; modal.imamColor = (c % 2 === 0) ? "#fff" : "#aaa"; c++; if (c >= ts) { clearInterval(id); modal.imamText = fV; modal.imamColor = "var(--green)"; if (typeof confetti === "function") { confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ["#00ff99", "#00ffff", "#ffffff"], zIndex: 10001 }); } } }, 30); };
         const triggerModal = (type, data = null) => { modal.show = true; modal.type = type; modal.progressWidth = "100%"; modal.transition = "none"; if (modalTimer) clearTimeout(modalTimer); setTimeout(() => { modal.progressWidth = "0%"; modal.transition = "width 60s linear"; }, 100); if (type === "START") { modal.title = "🚀 SYSTEM INITIALIZED"; modal.color = "var(--cyan)"; modal.shadow = "0 0 50px rgba(0,255,204,0.3)"; modal.msg = "DUTY CYCLE STARTED.<br>ALL SYSTEMS GREEN."; } else if (type === "END") { modal.title = "⚠️ DUTY CYCLE ENDED"; modal.color = "var(--yellow)"; modal.shadow = "0 0 50px rgba(255,204,0,0.3)"; modal.msg = "OPERATIONAL HOURS COMPLETE.<br>SECURE WORKSTATION."; } else if (type === "PRAYER") { modal.title = `🕌 PRAYER: ${data.name}`; modal.prayerName = data.name; modal.color = "var(--green)"; modal.shadow = "0 0 60px rgba(0,255,153,0.4)"; animateJackpot(data.imam); } playAlertSound(type); modalTimer = setTimeout(closeModal, 60000); };
@@ -437,6 +560,7 @@ createApp({
 
             fetchGeoData(); fetchNews(); fetchSocData(); fetchAllIncidents(); fetchHealth(); requestAnimationFrame(clockLoop);
             initSignalRTerminal();
+            syncDashboardMode();
 
             intervals.push(setInterval(() => {
                 const sysActions = [
@@ -503,8 +627,10 @@ createApp({
         onUnmounted(() => {
             intervals.forEach(clearInterval);
             if (terminalConnection) terminalConnection.stop();
+            if (incidentAlertTimer) clearTimeout(incidentAlertTimer);
+            document.body.classList.remove("soc-dashboard-mode");
         });
 
-        return { isTerminalLive, showBebek, epsChartRef, currentEps, currentEventsLastMinute, locationName, weather, clockHands, clocks, date, shift, soc, socHealth, handover, analystQueue, healthSources, nextPrayer, prayerTimes, modal, newsFeed, chartRef, sysLogs, isLoadingData, odometerTickets, incidentModal, incidentFilters, filteredRecentIncidents, allowedStatuses, allowedSeverities, initAudioContext, formatTime, formatDateTime, formatRelativeTime, getSevClass, getIncidentRowStyle, isFreshIncident, nextQuickStatus, quickAssignIncident, quickStatusChange, openArchiveIncident, openArchiveList, toggleFullScreen, closeModal, escapeHtml, openIncidentDetail, closeIncidentDetail, isolateAttacker, authChecked };
+        return { isTerminalLive, showBebek, epsChartRef, currentEps, currentEventsLastMinute, locationName, weather, clockHands, clocks, date, shift, soc, socHealth, handover, analystQueue, healthSources, sortedHealthSources, dashboardFeed, nextPrayer, prayerTimes, modal, incidentAlert, newsFeed, chartRef, sysLogs, isLoadingData, odometerTickets, incidentModal, incidentFilters, filteredRecentIncidents, allowedStatuses, allowedSeverities, viewMode, setViewMode, initAudioContext, formatTime, formatDateTime, formatRelativeTime, getSevClass, getIncidentRowStyle, isFreshIncident, nextQuickStatus, quickAssignIncident, quickStatusChange, openArchiveIncident, openArchiveList, toggleFullScreen, closeModal, closeIncidentAlert, escapeHtml, openIncidentDetail, closeIncidentDetail, isolateAttacker, authChecked };
     }
 }).mount("#app");

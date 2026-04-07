@@ -78,6 +78,15 @@ namespace TimeZoneBebek.Services
             }
         }
 
+        public void MarkWebhookDisabled()
+        {
+            lock (_lock)
+            {
+                _health.ThreatWebhookHealthy = true;
+                _health.LastWebhookError = "DISABLED: ElasticWorker no longer creates incidents automatically; use external POST /api/incidents.";
+            }
+        }
+
         public void MarkEpsSuccess(EpsSnapshot snapshot)
         {
             lock (_lock)

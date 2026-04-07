@@ -65,12 +65,23 @@ namespace TimeZoneBebek.Controllers
             return Content(html, "text/html");
         }
 
+        [HttpGet("/login")]
+        public async Task<IActionResult> Login()
+        {
+            return await RenderNamedPage("login");
+        }
+
         [HttpGet("/{pageName}")]
         public async Task<IActionResult> RenderPage(string pageName)
         {
+            return await RenderNamedPage(pageName);
+        }
+
+        private async Task<IActionResult> RenderNamedPage(string pageName)
+        {
             var validPages = new Dictionary<string, string> {
                 { "geo", "geo" }, { "geoold", "geo" }, { "monitor", "monitor" },
-                { "reports", "reports" }, { "portal", "portal" }, { "archive", "archive" }
+                { "reports", "reports" }, { "portal", "portal" }, { "archive", "archive" }, { "nms", "nms" }, { "login", "login" }
             };
 
             if (!validPages.ContainsKey(pageName)) return NotFound();
@@ -82,7 +93,7 @@ namespace TimeZoneBebek.Controllers
 
             string html = await System.IO.File.ReadAllTextAsync(path);
             html = html.Replace("{{PRELOADER}}", UIHelpers.GetPreloader())
-                       .Replace("{{SIDEBAR}}", UIHelpers.GetSidebar(validPages[pageName]));
+                       .Replace("{{SIDEBAR}}", pageName == "login" ? "" : UIHelpers.GetSidebar(validPages[pageName]));
 
             return Content(html, "text/html");
         }

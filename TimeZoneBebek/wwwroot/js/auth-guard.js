@@ -1,7 +1,8 @@
 (function () {
     const SESSION_KEY = "CSIRT_SESSION";
     const LEGACY_KEY = "CSIRT_KEY";
-    const ARCHIVE_PATH = "/archive";
+    const LOGIN_PATH = "/login";
+    const DASHBOARD_PATH = "/";
     const DEFAULT_HOURS = 8;
 
     const readSession = () => {
@@ -33,6 +34,8 @@
         return { key, expiresAt };
     };
 
+    const toAbsolutePath = (path, query = "") => `${window.location.origin}${path}${query}`;
+
     const saveSession = (session) => {
         localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     };
@@ -50,11 +53,12 @@
     }
 
     const path = window.location.pathname.toLowerCase();
-    const isArchivePage = path === ARCHIVE_PATH || path.startsWith(ARCHIVE_PATH + "/");
+    const isLoginPage = path === LOGIN_PATH || path.startsWith(LOGIN_PATH + "/");
 
-    if ((!session || isExpired) && !isArchivePage) {
-        alert("ACCESS DENIED: Session missing or expired. Please login again via Archive Dashboard.");
-        window.location.href = ARCHIVE_PATH;
+    if ((!session || isExpired) && !isLoginPage) {
+        const next = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
+        alert("ACCESS DENIED: Session missing or expired. Please login again.");
+        window.location.href = toAbsolutePath(LOGIN_PATH, `?returnUrl=${next}`);
     }
 
     window.API_KEY = !session || isExpired ? "" : session.key.trim();
@@ -70,7 +74,16 @@
         logout: () => {
             clearSession();
             window.API_KEY = "";
-            window.location.href = ARCHIVE_PATH;
+            window.location.href = toAbsolutePath(LOGIN_PATH);
         }
     };
+
+    if (isLoginPage && session && !isExpired) {
+        const params = new URLSearchParams(window.location.search);
+        const returnUrl = params.get("returnUrl");
+        const nextUrl = returnUrl && returnUrl.startsWith("/") ? returnUrl : DASHBOARD_PATH;
+        if (window.location.pathname + window.location.search !== nextUrl) {
+            window.location.replace(nextUrl);
+        }
+    }
 })();

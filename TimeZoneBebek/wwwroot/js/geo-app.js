@@ -16,7 +16,7 @@ createApp({
         const latencyMs = ref("--");
         const statusText = ref("● SYSTEM ONLINE");
         const statusColor = ref("var(--green)");
-        const viewMode = ref(localStorage.getItem("GEO_VIEW_MODE") || "analytic");
+        const viewMode = ref(localStorage.getItem("GEO_VIEW_MODE") || "dashboard");
 
         const hud = reactive({ ip: "READY", city: "---", coord: "---", visible: true });
         const intel = reactive({
@@ -106,7 +106,28 @@ createApp({
 
         const filteredThreatLog = computed(() => threatLog.value.filter(matchesFilters));
         const filteredEventHistory = computed(() => eventHistory.value.filter(matchesFilters));
+        const dashboardFeed = computed(() =>
+            filteredThreatLog.value
+                .slice()
+                .sort((left, right) => {
+                    const severityDelta = getSeverityRank(left.severity) - getSeverityRank(right.severity);
+                    if (severityDelta !== 0) return severityDelta;
+                    return (right.count || 0) - (left.count || 0);
+                })
+                .slice(0, 8));
         const replayTimeline = computed(() => filteredEventHistory.value.slice(0, 40).reverse());
+        const dashboardSummary = computed(() => {
+            const threats = filteredThreatLog.value;
+            const totalHits = threats.reduce((sum, threat) => sum + (threat.count || 0), 0);
+            const criticalCount = threats.filter((threat) => threat.severity === "CRITICAL").length;
+            const topThreat = [...threats].sort((left, right) => (right.count || 0) - (left.count || 0))[0] || null;
+            return {
+                totalHits,
+                activeSources: threats.length,
+                criticalCount,
+                topCountry: topThreat?.countryLabel || "N/A"
+            };
+        });
         const primaryLabelThreats = computed(() => {
             const pool = [];
             const addUnique = (threat) => {
@@ -134,6 +155,17 @@ createApp({
         const setViewMode = (mode) => {
             viewMode.value = mode;
             localStorage.setItem("GEO_VIEW_MODE", mode);
+        };
+
+        const getSeverityRank = (severity) => ({
+            CRITICAL: 0,
+            HIGH: 1,
+            MEDIUM: 2,
+            LOW: 3
+        }[severity] ?? 4);
+
+        const syncWallboardMode = () => {
+            document.body.classList.toggle("geo-dashboard-wallboard", viewMode.value === "dashboard");
         };
 
         const unlockAudio = () => {
@@ -849,12 +881,17 @@ createApp({
             renderThreatLabels();
         });
 
+        watch(viewMode, () => {
+            syncWallboardMode();
+        });
+
         onMounted(() => {
             initGlobe();
             initSignalR();
             document.addEventListener("keydown", handleKeydown);
             if (isAudioEnabled.value) Howler.mute(false);
             refreshCountryStats();
+            syncWallboardMode();
         });
 
         onUnmounted(() => {
@@ -863,6 +900,7 @@ createApp({
             stopReplayPlayback();
             if (alarmCooldownTimer) clearTimeout(alarmCooldownTimer);
             document.removeEventListener("keydown", handleKeydown);
+            document.body.classList.remove("geo-dashboard-wallboard");
             if (connection) connection.stop();
         });
 
@@ -890,6 +928,8 @@ createApp({
             severityOptions,
             typeOptions,
             countryOptions,
+            dashboardFeed,
+            dashboardSummary,
             legendItems,
             guidanceTips,
             toggleAudio,

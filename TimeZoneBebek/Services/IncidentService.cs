@@ -1,5 +1,4 @@
 using TimeZoneBebek.Models;
-using TimeZoneBebek.Repositories;
 
 namespace TimeZoneBebek.Services
 {
@@ -8,24 +7,42 @@ namespace TimeZoneBebek.Services
         private static readonly string[] AllowedSeverities = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
         private const string DefaultActor = "SOC_CONSOLE";
 
-        private readonly JsonRepository<List<Incident>> _repo;
+        private readonly IIncidentStore _store;
         private readonly HttpClient _httpClient;
         private readonly OperationsConfig _operationsConfig;
 
-        public IncidentService(HttpClient httpClient, IConfiguration configuration)
+        public IncidentService(IIncidentStore store, HttpClient httpClient, IConfiguration configuration)
         {
-            _repo = new JsonRepository<List<Incident>>("incidents.json");
+            _store = store;
             _httpClient = httpClient;
             _operationsConfig = configuration.GetSection("OperationsConfig").Get<OperationsConfig>() ?? new OperationsConfig();
         }
 
         public async Task<List<Incident>> GetAllAsync()
         {
-            var incidents = await _repo.LoadAsync();
+            var incidents = await _store.LoadAsync();
             return incidents
                 .Select(NormalizeLoadedIncident)
                 .OrderByDescending(i => i.Date)
                 .ToList();
+        }
+
+        public async Task<IncidentArchivePage> SearchArchiveAsync(IncidentArchiveQuery query)
+        {
+            var normalizedQuery = new IncidentArchiveQuery
+            {
+                Search = query.Search,
+                Severity = string.IsNullOrWhiteSpace(query.Severity) ? "ALL" : query.Severity.Trim().ToUpperInvariant(),
+                Status = string.IsNullOrWhiteSpace(query.Status) ? "ALL" : query.Status.Trim().ToUpperInvariant(),
+                Page = Math.Max(query.Page, 1),
+                PageSize = Math.Clamp(query.PageSize, 10, 100)
+            };
+
+            var page = await _store.SearchAsync(normalizedQuery);
+            page.Items = page.Items
+                .Select(NormalizeLoadedIncident)
+                .ToList();
+            return page;
         }
 
         public async Task<DashboardSummary> GetDashboardSummaryAsync()
@@ -91,12 +108,12 @@ namespace TimeZoneBebek.Services
 
         public async Task<(bool Success, string Message, string? Id)> AddAsync(Incident newInc)
         {
-            var list = await _repo.LoadAsync();
             var validation = ValidateAndNormalize(newInc, isCreate: true);
             if (!validation.Success)
                 return (false, validation.Message, null);
 
             var normalized = validation.Incident!;
+            var list = await _store.LoadAsync();
             if (!string.IsNullOrEmpty(normalized.Id) && list.Any(x => x.Id == normalized.Id))
                 return (false, $"Duplicate ID: {normalized.Id}", null);
 
@@ -114,15 +131,13 @@ namespace TimeZoneBebek.Services
             if (!string.IsNullOrWhiteSpace(normalized.Owner))
                 AddAudit(normalized, "ASSIGNED", $"Assigned to {normalized.Owner}");
 
-            list.Insert(0, normalized);
-            await _repo.SaveAsync(list);
+            await _store.AddAsync(normalized);
             return (true, "Logged", normalized.Id);
         }
 
         public async Task<(bool Success, string Message)> UpdateAsync(string id, Incident updatedInc)
         {
-            var list = await _repo.LoadAsync();
-            var item = list.FirstOrDefault(x => x.Id == id);
+            var item = await _store.GetByIdAsync(id);
             if (item == null)
                 return (false, "Incident Not Found");
 
@@ -156,20 +171,13 @@ namespace TimeZoneBebek.Services
             item.ResolutionNote = normalized.ResolutionNote;
             item.UpdatedAt = DateTime.UtcNow;
 
-            await _repo.SaveAsync(list);
+            await _store.UpdateAsync(item);
             return (true, "Incident Updated");
         }
 
         public async Task<bool> DeleteAsync(string id)
         {
-            var list = await _repo.LoadAsync();
-            var item = list.FirstOrDefault(x => string.Equals(x.Id?.Trim(), id.Trim(), StringComparison.OrdinalIgnoreCase));
-            if (item == null)
-                return false;
-
-            list.Remove(item);
-            await _repo.SaveAsync(list);
-            return true;
+            return await _store.DeleteAsync(id);
         }
 
         public async Task<(bool Success, string Message)> UpdateStatusAsync(string id, string newStatus)
@@ -178,8 +186,7 @@ namespace TimeZoneBebek.Services
             if (!IncidentStatuses.All.Contains(normalizedStatus))
                 return (false, "Invalid Status");
 
-            var list = await _repo.LoadAsync();
-            var item = list.FirstOrDefault(x => x.Id == id);
+            var item = await _store.GetByIdAsync(id);
             if (item == null)
                 return (false, "Incident Not Found");
             if (!IncidentStatuses.CanTransition(item.Status, normalizedStatus))
@@ -192,7 +199,7 @@ namespace TimeZoneBebek.Services
                 item.ResolutionNote = $"Marked as {item.Status} on {DateTime.Now:yyyy-MM-dd HH:mm}";
 
             AddAudit(item, "STATUS_CHANGED", $"Status changed from {previous} to {item.Status}");
-            await _repo.SaveAsync(list);
+            await _store.UpdateAsync(item);
             return (true, "Status Updated");
         }
 
@@ -202,34 +209,26 @@ namespace TimeZoneBebek.Services
             if (!IncidentStatuses.All.Contains(status))
                 return 0;
 
-            var list = await _repo.LoadAsync();
-            int count = 0;
-            foreach (var id in req.Ids.Distinct())
-            {
-                var item = list.FirstOrDefault(x => x.Id == id);
-                if (item == null || !IncidentStatuses.CanTransition(item.Status, status))
-                    continue;
+            return await _store.BulkUpdateStatusAsync(
+                req.Ids,
+                status,
+                item => IncidentStatuses.CanTransition(item.Status, status),
+                item =>
+                {
+                    var previous = item.Status;
+                    item.Status = status;
+                    item.UpdatedAt = DateTime.UtcNow;
+                    if (IncidentStatuses.IsTerminal(status) && string.IsNullOrWhiteSpace(item.ResolutionNote))
+                        item.ResolutionNote = $"Bulk updated to {status} on {DateTime.Now:yyyy-MM-dd HH:mm}";
 
-                var previous = item.Status;
-                item.Status = status;
-                item.UpdatedAt = DateTime.UtcNow;
-                if (IncidentStatuses.IsTerminal(status) && string.IsNullOrWhiteSpace(item.ResolutionNote))
-                    item.ResolutionNote = $"Bulk updated to {status} on {DateTime.Now:yyyy-MM-dd HH:mm}";
-
-                AddAudit(item, "STATUS_CHANGED", $"Status changed from {previous} to {status} via bulk update");
-                count++;
-            }
-
-            if (count > 0)
-                await _repo.SaveAsync(list);
-
-            return count;
+                    AddAudit(item, "STATUS_CHANGED", $"Status changed from {previous} to {status} via bulk update");
+                    return item;
+                });
         }
 
         public async Task<(bool Success, string Analysis)> AnalyzeWithAiAsync(string id)
         {
-            var list = await _repo.LoadAsync();
-            var item = list.FirstOrDefault(x => x.Id == id);
+            var item = await _store.GetByIdAsync(id);
             if (item == null)
                 return (false, "Incident not found");
             if (!string.IsNullOrEmpty(item.AiAnalysis))
@@ -261,7 +260,7 @@ namespace TimeZoneBebek.Services
                 item.AiAnalysis = analysisProp.GetString();
                 item.UpdatedAt = DateTime.UtcNow;
                 AddAudit(item, "AI_ANALYSIS", "AI threat analysis generated");
-                await _repo.SaveAsync(list);
+                await _store.UpdateAsync(item);
                 return (true, item.AiAnalysis ?? "");
             }
             catch (Exception ex)

@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang='id'>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Network Monitoring System</title>
+
+    <script src="js/auth-guard.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href='https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;500;700;900&display=swap' rel='stylesheet'>
+    <link rel="stylesheet" href="/style.css">
+
+    <style>
+        :root {
+            --nms-bg: #040b0d;
+            --nms-panel: rgba(7, 18, 24, 0.94);
+            --nms-panel-soft: rgba(5, 13, 17, 0.9);
+            --nms-border: rgba(0, 255, 204, 0.15);
+            --nms-border-strong: rgba(0, 255, 204, 0.34);
+            --nms-text: #f2fffd;
+            --nms-muted: #84a39e;
+            --nms-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
+        }
+
+        body {
+            background-color: var(--nms-bg) !important;
+            background-image:
+                linear-gradient(rgba(0, 255, 204, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 204, 0.025) 1px, transparent 1px),
+                radial-gradient(circle at top, rgba(0, 255, 204, 0.08), transparent 55%);
+            background-size: 34px 34px, 34px 34px, auto;
+        }
+
+        #app {
+            min-height: 100vh;
+        }
+
+        body.nms-wallboard .sidebar,
+        body.nms-wallboard .menu-btn,
+        body.nms-wallboard .overlay {
+            display: none !important;
+        }
+
+        body.nms-wallboard .content {
+            margin-left: 0 !important;
+            width: 100% !important;
+            max-width: none !important;
+        }
+
+        .nms-shell {
+            width: min(1540px, calc(100% - 34px));
+            margin: 0 auto;
+            padding: 18px 0 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .hero,
+        .summary-strip,
+        .category-card,
+        .detail-card {
+            background: var(--nms-panel);
+            border: 1px solid var(--nms-border);
+            border-radius: 16px;
+            box-shadow: var(--nms-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before,
+        .summary-strip::before,
+        .category-card::before,
+        .detail-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(0, 255, 204, 0.05), transparent 35%, transparent 70%, rgba(0, 255, 204, 0.03));
+            pointer-events: none;
+        }
+
+        .hero {
+            padding: 14px 16px;
+            display: grid;
+            grid-template-columns: 1.3fr 0.95fr;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .hero-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 6px;
+        }
+
+        .hero-logo {
+            width: 132px;
+            max-width: 30vw;
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 0 10px rgba(57, 255, 20, 0.08));
+            opacity: 0.92;
+        }
+
+        .hero-kicker {
+            color: var(--nms-muted);
+            font-size: 0.72rem;
+            letter-spacing: 0.22rem;
+            text-transform: uppercase;
+        }
+
+        .hero-title {
+            margin: 0 0 4px;
+            font-family: 'Orbitron';
+            font-size: clamp(1.25rem, 2vw, 2rem);
+            color: var(--nms-text);
+            letter-spacing: 0.08rem;
+        }
+
+        .hero-copy {
+            color: #a9c2bd;
+            line-height: 1.45;
+            font-size: 0.76rem;
+            max-width: 760px;
+        }
+
+        .mode-toggle {
+            display: inline-flex;
+            gap: 8px;
+            padding: 5px;
+            margin-top: 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 255, 204, 0.18);
+            background: rgba(0, 0, 0, 0.24);
+        }
+
+        .mode-btn {
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--nms-muted);
+            font-family: 'Orbitron';
+            font-size: 0.7rem;
+            padding: 7px 12px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mode-btn.active {
+            background: rgba(0, 255, 204, 0.92);
+            color: #03100e;
+            box-shadow: 0 0 18px rgba(0, 255, 204, 0.2);
+        }
+
+        .hero-meta {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .meta-pill,
+        .sync-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 255, 204, 0.18);
+            background: rgba(0, 0, 0, 0.28);
+            color: var(--nms-text);
+            font-size: 0.7rem;
+            white-space: nowrap;
+        }
+
+        .hero-side {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .summary-card {
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: var(--nms-panel-soft);
+            min-height: 74px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .summary-card .label {
+            color: var(--nms-muted);
+            font-size: 0.66rem;
+            letter-spacing: 0.12rem;
+            text-transform: uppercase;
+        }
+
+        .summary-card .value {
+            font-family: 'Orbitron';
+            font-size: 1.22rem;
+            color: var(--nms-text);
+        }
+
+        .summary-card .hint {
+            color: #75908b;
+            font-size: 0.66rem;
+        }
+
+        .summary-strip {
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .summary-strip .ops {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .compact-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #8ea9a4;
+            font-size: 0.68rem;
+        }
+
+        .cyber-btn {
+            background: rgba(0, 255, 204, 0.1);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 7px 11px;
+            font-family: 'Orbitron';
+            font-size: 0.72rem;
+            cursor: pointer;
+            transition: 0.25s;
+            border-radius: 10px;
+        }
+
+        .cyber-btn:hover {
+            background: var(--cyan);
+            color: #00140f;
+            box-shadow: 0 0 16px rgba(0, 255, 204, 0.24);
+        }
+
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .analytics-shell {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 12px;
+        }
+
+        .analytics-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .analytics-card {
+            padding: 14px;
+        }
+
+        .analytics-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .analytics-title {
+            margin: 0;
+            font-family: 'Orbitron';
+            font-size: 0.86rem;
+            color: var(--nms-text);
+        }
+
+        .range-toggle {
+            display: inline-flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .range-btn {
+            border: 1px solid rgba(0, 255, 204, 0.16);
+            background: rgba(0, 0, 0, 0.22);
+            color: var(--nms-muted);
+            font-family: 'JetBrains Mono';
+            font-size: 0.7rem;
+            padding: 6px 10px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .range-btn.active {
+            color: #03100e;
+            background: rgba(0, 255, 204, 0.9);
+            border-color: rgba(0, 255, 204, 0.96);
+        }
+
+        .chart-host {
+            min-height: 280px;
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .analytics-mini {
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(3, 12, 16, 0.72);
+        }
+
+        .analytics-mini .label {
+            color: var(--nms-muted);
+            font-size: 0.66rem;
+            letter-spacing: 0.12rem;
+            text-transform: uppercase;
+        }
+
+        .analytics-mini .value {
+            margin-top: 8px;
+            font-family: 'Orbitron';
+            font-size: 1.1rem;
+            color: var(--nms-text);
+        }
+
+        .analytics-mini .hint {
+            margin-top: 6px;
+            color: #75908b;
+            font-size: 0.68rem;
+        }
+
+        .down-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 420px;
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+
+        .down-item {
+            padding: 11px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 74, 120, 0.18);
+            background: rgba(38, 8, 14, 0.34);
+        }
+
+        .down-item-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .down-item-name {
+            color: var(--nms-text);
+            font-size: 0.84rem;
+            font-weight: 700;
+        }
+
+        .down-item-meta {
+            margin-top: 6px;
+            color: #d5aab4;
+            font-size: 0.74rem;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .down-empty {
+            padding: 18px 12px;
+            border-radius: 12px;
+            border: 1px dashed rgba(0,255,204,0.12);
+            color: var(--nms-muted);
+            text-align: center;
+            font-size: 0.78rem;
+        }
+
+        .mini-toggle {
+            display: inline-flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .mini-toggle-btn {
+            border: 1px solid rgba(0,255,204,0.14);
+            background: rgba(0,0,0,0.18);
+            color: var(--nms-muted);
+            font-family: 'JetBrains Mono';
+            font-size: 0.68rem;
+            padding: 6px 9px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mini-toggle-btn.active {
+            background: rgba(0,255,204,0.88);
+            color: #03100e;
+            border-color: rgba(0,255,204,0.94);
+        }
+
+        .category-card {
+            padding: 12px;
+        }
+
+        .category-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .category-title {
+            margin: 0;
+            font-family: 'Orbitron';
+            font-size: 0.9rem;
+            color: var(--nms-text);
+        }
+
+        .category-subtitle {
+            margin-top: 3px;
+            color: var(--nms-muted);
+            font-size: 0.68rem;
+        }
+
+        .status-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .status-card {
+            padding: 10px 11px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(3, 12, 16, 0.78);
+            cursor: pointer;
+            transition: transform 0.22s, border-color 0.22s, box-shadow 0.22s;
+        }
+
+        .status-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--nms-border-strong);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.22);
+        }
+
+        .status-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .status-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .status-main {
+            min-width: 0;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 999px;
+            flex: 0 0 12px;
+            background: rgba(132, 163, 158, 0.45);
+            box-shadow: 0 0 0 1px rgba(132, 163, 158, 0.16);
+        }
+
+        .is-up .status-indicator {
+            background: #39ff14;
+            box-shadow: 0 0 7px rgba(57, 255, 20, 0.68), 0 0 14px rgba(57, 255, 20, 0.2);
+            animation: blinkCalm 2.7s ease-in-out infinite;
+        }
+
+        .status-indicator.is-up {
+            background: #39ff14;
+            box-shadow: 0 0 7px rgba(57, 255, 20, 0.68), 0 0 14px rgba(57, 255, 20, 0.2);
+            animation: blinkCalm 2.7s ease-in-out infinite;
+        }
+
+        .is-down .status-indicator {
+            background: #ff4a78;
+            box-shadow: 0 0 9px rgba(255, 74, 120, 0.88), 0 0 18px rgba(255, 74, 120, 0.38);
+            animation: blinkFast 0.75s ease-in-out infinite;
+        }
+
+        .status-indicator.is-down {
+            background: #ff4a78;
+            box-shadow: 0 0 9px rgba(255, 74, 120, 0.88), 0 0 18px rgba(255, 74, 120, 0.38);
+            animation: blinkFast 0.75s ease-in-out infinite;
+        }
+
+        .is-degraded .status-indicator {
+            background: #ffc24c;
+            box-shadow: 0 0 8px rgba(255, 194, 76, 0.82), 0 0 16px rgba(255, 194, 76, 0.28);
+            animation: blinkMedium 1.45s ease-in-out infinite;
+        }
+
+        .status-indicator.is-degraded {
+            background: #ffc24c;
+            box-shadow: 0 0 8px rgba(255, 194, 76, 0.82), 0 0 16px rgba(255, 194, 76, 0.28);
+            animation: blinkMedium 1.45s ease-in-out infinite;
+        }
+
+        .is-unknown .status-indicator {
+            background: rgba(132, 163, 158, 0.55);
+            box-shadow: 0 0 10px rgba(132, 163, 158, 0.18);
+        }
+
+        .status-indicator.is-unknown {
+            background: rgba(132, 163, 158, 0.55);
+            box-shadow: 0 0 10px rgba(132, 163, 158, 0.18);
+        }
+
+        @keyframes blinkCalm {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.52; transform: scale(0.92); }
+        }
+
+        @keyframes blinkMedium {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.36; transform: scale(0.86); }
+        }
+
+        @keyframes blinkFast {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.16; transform: scale(0.76); }
+        }
+
+        .status-name {
+            margin: 0;
+            color: var(--nms-text);
+            font-size: 0.9rem;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .status-desc {
+            margin-top: 2px;
+            color: #7f9a95;
+            font-size: 0.68rem;
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .status-detail {
+            margin-top: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            color: #9bc1bb;
+            font-size: 0.68rem;
+        }
+
+        .status-detail span:first-child {
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .status-chip {
+            min-width: 88px;
+            text-align: center;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-family: 'Orbitron';
+            font-size: 0.66rem;
+            letter-spacing: 0.07rem;
+            border: 1px solid transparent;
+        }
+
+        .is-up .status-chip {
+            color: #102200;
+            background: rgba(57, 255, 20, 0.86);
+            border-color: rgba(57, 255, 20, 0.96);
+        }
+
+        .is-down .status-chip {
+            color: #fff1f4;
+            background: rgba(255, 74, 120, 0.9);
+            border-color: rgba(255, 74, 120, 0.98);
+        }
+
+        .is-degraded .status-chip {
+            color: #241400;
+            background: rgba(255, 194, 76, 0.9);
+            border-color: rgba(255, 194, 76, 0.98);
+        }
+
+        .is-unknown .status-chip {
+            color: #ebf3f1;
+            background: rgba(132, 163, 158, 0.28);
+            border-color: rgba(132, 163, 158, 0.42);
+        }
+
+        .loading-state {
+            padding: 18px;
+            border-radius: 16px;
+            border: 1px dashed rgba(0, 255, 204, 0.18);
+            color: var(--nms-muted);
+            text-align: center;
+        }
+
+        .detail-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1200;
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            box-sizing: border-box;
+        }
+
+        .detail-card {
+            width: min(760px, 100%);
+            max-height: 88vh;
+            overflow-y: auto;
+            padding: 18px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 108px 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed rgba(0, 255, 204, 0.14);
+        }
+
+        .detail-grid .label {
+            color: var(--nms-muted);
+            font-size: 0.72rem;
+            letter-spacing: 0.08rem;
+            text-transform: uppercase;
+        }
+
+        .detail-grid .value {
+            color: var(--nms-text);
+            font-size: 0.88rem;
+        }
+
+        .target-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .target-row {
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.28);
+            border: 1px solid rgba(0, 255, 204, 0.12);
+        }
+
+        .target-row-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .target-name {
+            color: var(--nms-text);
+            font-weight: 700;
+            font-size: 0.86rem;
+        }
+
+        .target-meta {
+            margin-top: 8px;
+            color: #87a39f;
+            font-size: 0.75rem;
+            line-height: 1.55;
+        }
+
+        @media (max-width: 1280px) {
+            .hero,
+            .categories,
+            .analytics-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-side {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 720px) {
+            .nms-shell {
+                width: min(100% - 18px, 100%);
+                padding-top: 16px;
+            }
+
+            .hero-brand {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .hero-side,
+            .categories,
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .summary-strip,
+            .status-top,
+            .status-detail,
+            .target-row-head {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="loaded">
+    {{PRELOADER}}
+    <div class='scanlines'></div>
+    <div class='cyber-grid'></div>
+    {{SIDEBAR}}
+
+    <div id="app" class='content'>
+        <div class="nms-shell">
+            <section class="hero">
+                <div>
+                    <div class="hero-brand">
+                        <img src="/logonms.png" alt="Legacy NMS Logo" class="hero-logo">
+                        <div>
+                            <div class="hero-kicker">BAPPENAS NETWORK OPERATIONS</div>
+                            <h1 class="hero-title glitch" data-text="NETWORK MONITORING SYSTEM">NETWORK MONITORING SYSTEM</h1>
+                            <div class="mode-toggle">
+                                <button class="mode-btn" :class="{ active: viewMode === 'dashboard' }" @click="setViewMode('dashboard')">Dashboard</button>
+                                <button class="mode-btn" :class="{ active: viewMode === 'analytic' }" @click="setViewMode('analytic')">Analytic</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hero-copy">
+                        <span v-if="viewMode === 'dashboard'">Status realtime SOC untuk aplikasi, infrastruktur, network security, dan sensor lingkungan.</span>
+                        <span v-else>Analytic mode menampilkan tren kondisi NMS berbasis history in-memory untuk rentang 5 menit sampai 24 jam.</span>
+                    </div>
+                    <div class="hero-meta">
+                        <div class="meta-pill"><i class="fas fa-bolt"></i> Live SignalR Push</div>
+                        <div class="meta-pill"><i class="fas fa-clock"></i> Last Sync {{ formatTimestamp(snapshot.generatedAtUtc) }}</div>
+                    </div>
+                </div>
+                <div class="hero-side">
+                    <div class="summary-card">
+                        <span class="label">Assets</span>
+                        <div class="value">{{ totalCards }}</div>
+                        <div class="hint">Monitored item</div>
+                    </div>
+                    <div class="summary-card">
+                        <span class="label">Healthy</span>
+                        <div class="value" style="color:var(--green)">{{ healthyCards }}</div>
+                        <div class="hint">All target ok</div>
+                    </div>
+                    <div class="summary-card">
+                        <span class="label">Degraded</span>
+                        <div class="value" style="color:var(--yellow)">{{ degradedCards }}</div>
+                        <div class="hint">Partial issue</div>
+                    </div>
+                    <div class="summary-card">
+                        <span class="label">Down</span>
+                        <div class="value" style="color:var(--red)">{{ downCards + unknownCards }}</div>
+                        <div class="hint">Need attention</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="summary-strip">
+                <div class="ops">
+                    <div class="sync-badge">
+                        <i class="fas fa-satellite-dish"></i>
+                        SIGNALR {{ connectionState }}
+                    </div>
+                    <div class="sync-badge">
+                        <i class="fas fa-repeat"></i>
+                        WINDOW {{ snapshot.refreshIntervalSeconds || 15 }}s
+                    </div>
+                    <div class="sync-badge">
+                        <i class="fas fa-expand"></i>
+                        FULLSCREEN {{ fullscreenState }}
+                    </div>
+                    <div class="sync-badge" v-if="lastError">
+                        <i class="fas fa-triangle-exclamation"></i>
+                        {{ lastError }}
+                    </div>
+                    <div class="compact-row">
+                        <i class="fas fa-circle"></i>
+                        Klik kartu untuk detail endpoint
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="cyber-btn" @click="enterFullscreen">
+                        <i class="fas fa-expand"></i> FULLSCREEN
+                    </button>
+                    <button class="cyber-btn" v-if="!isWallboardMode" @click="openWallboard">
+                        <i class="fas fa-tv"></i> WALLBOARD
+                    </button>
+                    <button class="cyber-btn" @click="fetchSnapshot">
+                        <i class="fas fa-rotate"></i> FORCE SNAPSHOT
+                    </button>
+                </div>
+            </section>
+
+            <section v-if="isLoading" class="loading-state">
+                Memuat snapshot awal NMS dari backend...
+            </section>
+
+            <section v-else-if="viewMode === 'dashboard'" class="categories">
+                <div class="category-card" v-for="category in categories" :key="category.name">
+                    <div class="category-head">
+                        <div>
+                            <h2 class="category-title">{{ category.name }}</h2>
+                            <div class="category-subtitle">{{ category.items.length }} monitored item</div>
+                        </div>
+                        <div class="sync-badge">
+                            <i class="fas fa-wave-square"></i>
+                            LIVE
+                        </div>
+                    </div>
+                    <div class="status-stack">
+                        <article
+                            class="status-card"
+                            :class="getStatusClass(item.status)"
+                            v-for="item in category.items"
+                            :key="item.name"
+                            @click="openItem(item)">
+                            <div class="status-top">
+                                <div class="status-left">
+                                    <span class="status-indicator"></span>
+                                    <div class="status-main">
+                                        <h3 class="status-name">{{ item.name }}</h3>
+                                        <div class="status-desc">{{ item.description || item.detail }}</div>
+                                    </div>
+                                </div>
+                                <div class="status-chip">{{ item.status }}</div>
+                            </div>
+                            <div class="status-detail">
+                                <span>{{ item.detail }}</span>
+                                <span v-if="item.value">{{ item.value }} {{ item.unit }}</span>
+                                <span v-else>{{ formatLatency(item.latencyMs) }}</span>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <section v-else class="analytics-shell">
+                <div class="analytics-stack">
+                    <div class="category-card analytics-card">
+                        <div class="analytics-head">
+                            <div>
+                                <h2 class="analytics-title">Availability Trend</h2>
+                                <div class="category-subtitle">Status count history by range</div>
+                            </div>
+                            <div class="range-toggle">
+                                <button class="range-btn" v-for="range in historyRanges" :key="range" :class="{ active: historyRange === range }" @click="setHistoryRange(range)">{{ range }}</button>
+                            </div>
+                        </div>
+                        <div ref="availabilityChartRef" class="chart-host"></div>
+                    </div>
+                    <div class="category-card analytics-card">
+                        <div class="analytics-head">
+                            <div>
+                                <h2 class="analytics-title">Category Issue Trend</h2>
+                                <div class="category-subtitle">Down and degraded exposure by category</div>
+                            </div>
+                        </div>
+                        <div ref="categoryChartRef" class="chart-host"></div>
+                    </div>
+                </div>
+                <div class="analytics-stack">
+                    <div class="category-card analytics-card">
+                        <div class="analytics-head">
+                            <div>
+                                <h2 class="analytics-title">Snapshot Insights</h2>
+                                <div class="category-subtitle">Quick reading for selected time window</div>
+                            </div>
+                        </div>
+                        <div class="analytics-grid">
+                            <div class="analytics-mini">
+                                <div class="label">Samples</div>
+                                <div class="value">{{ historySummary.sampleCount }}</div>
+                                <div class="hint">History points in active range</div>
+                            </div>
+                            <div class="analytics-mini">
+                                <div class="label">Avg Latency</div>
+                                <div class="value">{{ formatLatency(historySummary.averageLatencyMs) }}</div>
+                                <div class="hint">Average item latency</div>
+                            </div>
+                            <div class="analytics-mini">
+                                <div class="label">Peak Down</div>
+                                <div class="value" style="color:var(--red)">{{ historySummary.peakDown }}</div>
+                                <div class="hint">Highest down count in range</div>
+                            </div>
+                            <div class="analytics-mini">
+                                <div class="label">Peak Degraded</div>
+                                <div class="value" style="color:var(--yellow)">{{ historySummary.peakDegraded }}</div>
+                                <div class="hint">Highest degraded count in range</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="category-card analytics-card">
+                        <div class="analytics-head">
+                            <div>
+                                <h2 class="analytics-title">Latency Trend</h2>
+                                <div class="category-subtitle">Average response latency over time</div>
+                            </div>
+                        </div>
+                        <div ref="latencyChartRef" class="chart-host"></div>
+                    </div>
+                    <div class="category-card analytics-card">
+                        <div class="analytics-head">
+                            <div>
+                                <h2 class="analytics-title">Top Problem Targets</h2>
+                                <div class="category-subtitle">Satu target satu baris, prioritas yang masih down sekarang</div>
+                            </div>
+                            <div class="mini-toggle">
+                                <button class="mini-toggle-btn" :class="{ active: downTargetFilter === 'active' }" @click="downTargetFilter = 'active'">Active Down</button>
+                                <button class="mini-toggle-btn" :class="{ active: downTargetFilter === 'all' }" @click="downTargetFilter = 'all'">All in Range</button>
+                            </div>
+                        </div>
+                        <div v-if="downTargetSummary.length === 0" class="down-empty">
+                            Tidak ada target yang cocok untuk filter pada range {{ historyRange }}.
+                        </div>
+                        <div v-else class="down-list">
+                            <div class="down-item" v-for="target in downTargetSummary" :key="`${target.itemName}-${target.targetName}-${target.targetAddress}`">
+                                <div class="down-item-head">
+                                    <div class="down-item-name">{{ target.targetName }}</div>
+                                    <div class="status-chip" :class="target.isActiveDown ? 'is-down' : 'is-up'">{{ target.isActiveDown ? 'ACTIVE DOWN' : 'RECOVERED' }}</div>
+                                </div>
+                                <div class="down-item-meta">
+                                    Item: {{ target.itemName }}<br>
+                                    Address: {{ target.targetAddress || '--' }}<br>
+                                    Last Seen: {{ formatTimestamp(target.lastSeenUtc) }}<br>
+                                    Hits: {{ target.hitCount }} sample<br>
+                                    Current: {{ target.currentStatus }}<br>
+                                    Detail: {{ target.detail || '--' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="detail-overlay" v-if="activeItem" @click.self="closeItem">
+            <aside class="detail-card">
+                <div class="status-top" style="margin-bottom:14px;">
+                    <div class="status-left">
+                        <span class="status-indicator" :class="getStatusClass(activeItem.status)"></span>
+                        <div>
+                            <h2 style="margin:0; font-family:'Orbitron'; color:var(--nms-text); font-size:1rem;">{{ activeItem.name }}</h2>
+                            <div class="category-subtitle">{{ activeItem.category }} | {{ activeItem.description || activeItem.detail }}</div>
+                        </div>
+                    </div>
+                    <button class="cyber-btn" @click="closeItem">
+                        <i class="fas fa-xmark"></i> CLOSE
+                    </button>
+                </div>
+
+                <div class="detail-grid">
+                    <div class="label">Item</div>
+                    <div class="value">{{ activeItem.name }}</div>
+                </div>
+                <div class="detail-grid">
+                    <div class="label">Category</div>
+                    <div class="value">{{ activeItem.category }}</div>
+                </div>
+                <div class="detail-grid">
+                    <div class="label">Status</div>
+                    <div class="value">{{ activeItem.status }}</div>
+                </div>
+                <div class="detail-grid">
+                    <div class="label">Check</div>
+                    <div class="value">{{ activeItem.checkType }}</div>
+                </div>
+                <div class="detail-grid">
+                    <div class="label">Checked</div>
+                    <div class="value">{{ formatTimestamp(activeItem.checkedAtUtc) }}</div>
+                </div>
+                <div class="detail-grid" v-if="activeItem.value">
+                    <div class="label">Reading</div>
+                    <div class="value">{{ activeItem.value }} {{ activeItem.unit }}</div>
+                </div>
+                <div class="detail-grid" v-else>
+                    <div class="label">Latency</div>
+                    <div class="value">{{ formatLatency(activeItem.latencyMs) }}</div>
+                </div>
+                <div class="detail-grid">
+                    <div class="label">Summary</div>
+                    <div class="value">{{ activeItem.detail }}</div>
+                </div>
+
+                <div class="target-list" v-if="(activeItem.targets || []).length">
+                    <div class="target-row" v-for="target in activeItem.targets" :key="`${activeItem.name}-${target.name}`">
+                        <div class="target-row-head">
+                            <div class="target-name">{{ target.name }}</div>
+                            <div class="status-chip" :class="getStatusClass(target.status)">{{ target.status }}</div>
+                        </div>
+                        <div class="target-meta">
+                            Target: {{ target.target || '--' }}<br>
+                            Check: {{ target.checkType }}<br>
+                            Detail: {{ target.detail || '--' }}<br>
+                            Latency: {{ formatLatency(target.latencyMs) }}
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script src="/js/nms-app.js?v=20260406a"></script>
+</body>
+</html>

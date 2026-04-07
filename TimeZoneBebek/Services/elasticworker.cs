@@ -12,10 +12,8 @@ namespace TimeZoneBebek.Services
         private readonly IHubContext<ThreatHub> _hubContext;
         private readonly ILogger<ElasticWorker> _logger;
         private readonly HttpClient _httpClient;
-        private readonly HttpClient _n8nClient;
         private readonly MonitoringState _monitoringState;
         private readonly string _elasticUrl;
-        private readonly string _threatIntelWebhookUrl;
         private readonly Dictionary<string, int> _threatTracker = new();
 
         public ElasticWorker(
@@ -29,9 +27,7 @@ namespace TimeZoneBebek.Services
             _monitoringState = monitoringState;
 
             var elasticConfig = configuration.GetSection("ElasticConfig").Get<ElasticConfig>() ?? new ElasticConfig();
-            var operationsConfig = configuration.GetSection("OperationsConfig").Get<OperationsConfig>() ?? new OperationsConfig();
             _elasticUrl = $"{elasticConfig.Url.TrimEnd('/')}/{elasticConfig.IndexPattern}/_search";
-            _threatIntelWebhookUrl = operationsConfig.ThreatIntelWebhookUrl;
 
             var handler = new HttpClientHandler();
             if (elasticConfig.AllowInvalidCertificate)
@@ -43,8 +39,9 @@ namespace TimeZoneBebek.Services
                 var authString = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{elasticConfig.Username}:{elasticConfig.Password}"));
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authString);
             }
-
-            _n8nClient = new HttpClient();
+            
+            // Incident creation sekarang hanya boleh datang dari HTTP POST eksternal, mis. n8n.
+            _monitoringState.MarkWebhookDisabled();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -138,10 +135,6 @@ namespace TimeZoneBebek.Services
                     {
                         await _hubContext.Clients.All.SendAsync("ReceiveThreats", cleanThreats, stoppingToken);
                         _monitoringState.MarkBroadcast();
-
-                        var newAttacks = cleanThreats.Where(t => t.IsNewEvent).ToList();
-                        foreach (var attack in newAttacks)
-                            _ = TriggerN8nWebhookAsync(attack, stoppingToken);
                     }
                 }
                 catch (Exception ex)
@@ -151,39 +144,6 @@ namespace TimeZoneBebek.Services
                 }
 
                 await Task.Delay(5000, stoppingToken);
-            }
-        }
-
-        private async Task TriggerN8nWebhookAsync(ThreatModel attack, CancellationToken stoppingToken)
-        {
-            if (string.IsNullOrWhiteSpace(_threatIntelWebhookUrl))
-                return;
-
-            try
-            {
-                var payload = new
-                {
-                    attacker_ip = attack.Ip,
-                    location = attack.Country,
-                    organization = attack.Organization,
-                    threat_rule = attack.Type,
-                    severity = attack.Severity,
-                    total_hits = attack.Count,
-                    target_web = attack.TargetWeb,
-                    attacker_query = attack.AttackerQuery,
-                    status_code = attack.StatusCode,
-                    timestamp = DateTime.UtcNow.ToString("O")
-                };
-
-                var response = await _n8nClient.PostAsJsonAsync(_threatIntelWebhookUrl, payload, stoppingToken);
-                response.EnsureSuccessStatusCode();
-                _monitoringState.MarkWebhookSuccess();
-                _logger.LogInformation("[N8N] Berhasil menembak webhook intelijen untuk IP {Ip}", attack.Ip);
-            }
-            catch (Exception ex)
-            {
-                _monitoringState.MarkWebhookFailure(ex.Message);
-                _logger.LogWarning("[N8N] Gagal mengirim webhook n8n untuk IP {Ip}: {Message}", attack.Ip, ex.Message);
             }
         }
     }

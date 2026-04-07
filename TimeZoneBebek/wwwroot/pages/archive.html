@@ -153,6 +153,23 @@
             border: 1px solid #333;
         }
 
+        .archive-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            color: #7e9b96;
+            font-size: 0.8rem;
+        }
+
+        .page-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
         .cyber-table {
             width: 100%;
             border-collapse: collapse;
@@ -392,13 +409,9 @@
         <div class="archive-container">
             <div class="toolbar">
                 <div style="color:#aaa; font-size:0.8rem;">
-                    {{ hasSession ? `SESSION ACTIVE UNTIL ${sessionExpiryLabel}` : 'NO ACTIVE SESSION. ENTER ACCESS KEY TO CONTINUE.' }}
+                    {{ hasSession ? `SESSION ACTIVE UNTIL ${sessionExpiryLabel}` : 'SESSION REQUIRED. PLEASE LOGIN VIA SECURE LOGIN PAGE.' }}
                 </div>
                 <div class="action-group">
-                    <input v-if="!hasSession" type="password" class="cyber-input" style="min-width:220px;" placeholder="Enter access key" v-model="sessionKeyInput">
-                    <button v-if="!hasSession" class="cyber-btn" @click="loginSession">
-                        <i class="fas fa-key"></i> START SESSION
-                    </button>
                     <button v-else class="cyber-btn btn-red" @click="logoutSession">
                         <i class="fas fa-right-from-bracket"></i> LOGOUT
                     </button>
@@ -446,8 +459,8 @@
                     <button class="cyber-btn" @click="fetchIncidents" title="Refresh Data">
                         <i class="fas fa-sync-alt" :class="{ 'fa-spin': isLoading }"></i> REFRESH
                     </button>
-                    <button class="cyber-btn" :disabled="selectedIds.length === 0" @click="bulkResolve">
-                        <i class="fas fa-check-double"></i> RESOLVE SELECTED ({{ selectedIds.length }})
+                    <button class="cyber-btn" :disabled="selectedIds.length === 0" @click="bulkTriaged">
+                        <i class="fas fa-check-double"></i> TRIAGE SELECTED ({{ selectedIds.length }})
                     </button>
                 </div>
             </div>
@@ -457,7 +470,7 @@
                     <thead>
                         <tr>
                             <th width="40" style="text-align:center;">
-                                <input type="checkbox" @change="toggleAll" :checked="isAllSelected && filteredIncidents.length > 0">
+                                <input type="checkbox" @change="toggleAll" :checked="isAllSelected && incidents.length > 0">
                             </th>
                             <th width="150">DATE / TIME</th>
                             <th width="100">SEVERITY</th>
@@ -474,12 +487,12 @@
                                 <i class="fas fa-circle-notch fa-spin fa-2x"></i><br><br>FETCHING ARCHIVE...
                             </td>
                         </tr>
-                        <tr v-else-if="filteredIncidents.length === 0">
+                        <tr v-else-if="incidents.length === 0">
                             <td colspan="8" style="text-align:center; padding: 30px; color: #666;">
                                 NO INCIDENTS MATCHING YOUR CRITERIA
                             </td>
                         </tr>
-                        <tr v-for="inc in filteredIncidents" :key="inc.id">
+                        <tr v-for="inc in incidents" :key="inc.id">
                             <td style="text-align:center;">
                                 <input type="checkbox" :value="inc.id" v-model="selectedIds">
                             </td>
@@ -510,8 +523,29 @@
                 </table>
             </div>
 
-            <div style="text-align:right; color:#666; font-size:0.8rem;">
-                SHOWING {{ filteredIncidents.length }} OF {{ incidents.length }} RECORDS
+            <div class="archive-footer">
+                <div>
+                    SHOWING {{ showingCount }} OF {{ pagination.totalCount }} FILTERED RECORDS
+                    <span style="color:#5f736f;">| TOTAL ARCHIVE {{ archiveSummary.totalCount }}</span>
+                </div>
+                <div class="page-controls">
+                    <label for="page-size-select" style="color:#9ac4bc;">ROWS</label>
+                    <select id="page-size-select" class="cyber-select" :value="pagination.pageSize" @change="updatePageSize(Number($event.target.value))">
+                        <option :value="10">10</option>
+                        <option :value="25">25</option>
+                        <option :value="50">50</option>
+                        <option :value="100">100</option>
+                    </select>
+                    <button class="cyber-btn" @click="goToPage(pagination.page - 1)" :disabled="pagination.page <= 1 || isLoading">
+                        <i class="fas fa-chevron-left"></i> PREV
+                    </button>
+                    <span style="min-width:120px; text-align:center; color:var(--cyan);">
+                        PAGE {{ pagination.page }} / {{ pagination.totalPages }}
+                    </span>
+                    <button class="cyber-btn" @click="goToPage(pagination.page + 1)" :disabled="pagination.page >= pagination.totalPages || isLoading">
+                        NEXT <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
             </div>
         </div>
 

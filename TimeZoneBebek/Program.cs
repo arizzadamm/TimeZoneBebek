@@ -19,8 +19,19 @@ builder.Services.AddCors(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
+builder.Services.AddScoped<IIncidentStore>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var incidentDb = configuration.GetConnectionString("IncidentDb");
+    return string.IsNullOrWhiteSpace(incidentDb)
+        ? new JsonIncidentStore()
+        : new PostgresIncidentStore(incidentDb);
+});
 builder.Services.AddScoped<IncidentService>();
 builder.Services.AddHostedService<ElasticWorker>();
+builder.Services.AddSingleton<NmsMonitorService>();
+builder.Services.AddSingleton<NmsState>();
+builder.Services.AddHostedService<NmsWorker>();
 builder.Services.AddSingleton<ElasticEpsService>();
 builder.Services.AddSingleton<MonitoringState>();
 
@@ -97,5 +108,6 @@ app.UseRateLimiter();
 // ==========================================
 app.MapControllers(); // Semua route API dan Page otomatis ditangani oleh Controller
 app.MapHub<ThreatHub>("/threatHub");
+app.MapHub<NmsHub>("/nmsHub");
 
 app.Run();

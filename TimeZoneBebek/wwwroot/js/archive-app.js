@@ -4,6 +4,8 @@ createApp({
     setup() {
         const severities = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
         const incidents = ref([]);
+        const archiveSummary = reactive({ openCount: 0, criticalCount: 0, assignedCount: 0, resolvedCount: 0, totalCount: 0, filteredCount: 0 });
+        const pagination = reactive({ page: 1, pageSize: 25, totalCount: 0, totalPages: 1 });
         const workflowStatuses = ref(["NEW", "TRIAGED", "IN_PROGRESS", "ESCALATED", "RESOLVED", "FALSE_POSITIVE"]);
         const workflowTransitions = ref({});
         const isLoading = ref(false);
@@ -23,38 +25,18 @@ createApp({
         const workflowDraft = reactive({ owner: "" });
         const form = reactive(createEmptyForm());
 
-        const filteredIncidents = computed(() => {
-            const q = searchQuery.value.trim().toLowerCase();
-            return incidents.value.filter((inc) => {
-                const searchable = [inc.title, inc.attacker, inc.id, inc.owner, inc.affectedAsset, inc.source]
-                    .filter(Boolean)
-                    .join(" ")
-                    .toLowerCase();
-                const matchSearch = !q || searchable.includes(q);
-                const matchSeverity = filterSev.value === "ALL" || inc.severity === filterSev.value;
-                const matchStatus = filterStatus.value === "ALL" || inc.status === filterStatus.value;
-                return matchSearch && matchSeverity && matchStatus;
-            });
-        });
-
         const isAllSelected = computed(() =>
-            filteredIncidents.value.length > 0 &&
-            filteredIncidents.value.length === selectedIds.value.length);
+            incidents.value.length > 0 &&
+            incidents.value.every(inc => selectedIds.value.includes(inc.id)));
 
         const knownOwners = computed(() =>
             [...new Set(incidents.value.map(inc => inc.owner).filter(Boolean))].sort((a, b) => a.localeCompare(b)));
 
-        const openIncidentCount = computed(() =>
-            incidents.value.filter(i => !["RESOLVED", "FALSE_POSITIVE"].includes(i.status)).length);
-
-        const criticalIncidentCount = computed(() =>
-            incidents.value.filter(i => i.severity === "CRITICAL" && !["RESOLVED", "FALSE_POSITIVE"].includes(i.status)).length);
-
-        const assignedIncidentCount = computed(() =>
-            incidents.value.filter(i => !!i.owner).length);
-
-        const resolvedIncidentCount = computed(() =>
-            incidents.value.filter(i => i.status === "RESOLVED").length);
+        const openIncidentCount = computed(() => archiveSummary.openCount);
+        const criticalIncidentCount = computed(() => archiveSummary.criticalCount);
+        const assignedIncidentCount = computed(() => archiveSummary.assignedCount);
+        const resolvedIncidentCount = computed(() => archiveSummary.resolvedCount);
+        const showingCount = computed(() => incidents.value.length);
 
         const allowedTransitions = computed(() => {
             if (!activeIncident.value) return [];
@@ -70,6 +52,10 @@ createApp({
 
         watch(activeIncident, (incident) => {
             workflowDraft.owner = incident?.owner || "";
+        });
+        watch([searchQuery, filterSev, filterStatus], () => {
+            pagination.page = 1;
+            fetchIncidents();
         });
 
         function createEmptyForm() {
@@ -136,7 +122,7 @@ createApp({
         }
 
         function toggleAll(e) {
-            selectedIds.value = e.target.checked ? filteredIncidents.value.map(i => i.id) : [];
+            selectedIds.value = e.target.checked ? incidents.value.map(i => i.id) : [];
         }
 
         async function fetchWorkflow() {
@@ -160,9 +146,40 @@ createApp({
 
             isLoading.value = true;
             try {
-                const res = await fetch("/api/incidents", { headers: { "X-API-KEY": API_KEY } });
+                const params = new URLSearchParams({
+                    search: searchQuery.value,
+                    severity: filterSev.value,
+                    status: filterStatus.value,
+                    page: String(pagination.page),
+                    pageSize: String(pagination.pageSize)
+                });
+
+                const res = await fetch(`/api/incidents/archive?${params.toString()}`, { headers: { "X-API-KEY": API_KEY } });
                 if (!res.ok) throw new Error();
-                incidents.value = await res.json();
+                const data = await res.json();
+
+                // FIX: Pengamanan tingkat tinggi saat parsing JSON dari .NET
+                // Jika .NET mengembalikan Array murni (bukan object), kita tangani
+                const isArray = Array.isArray(data);
+                incidents.value = isArray ? data : (data.items || []);
+
+                // Amankan Pagination
+                pagination.page = data.page || pagination.page;
+                pagination.pageSize = data.pageSize || pagination.pageSize;
+                pagination.totalCount = data.totalCount || incidents.value.length;
+                pagination.totalPages = data.totalPages || 1;
+
+                // FIX UTAMA: Gunakan fallback object kosong {} jika data.summary tidak dikirim oleh .NET
+                const summary = data.summary || {};
+
+                archiveSummary.openCount = summary.openCount || 0;
+                archiveSummary.criticalCount = summary.criticalCount || 0;
+                archiveSummary.assignedCount = summary.assignedCount || 0;
+                archiveSummary.resolvedCount = summary.resolvedCount || 0;
+                archiveSummary.totalCount = summary.totalCount || 0;
+                archiveSummary.filteredCount = summary.filteredCount || 0;
+
+                selectedIds.value = selectedIds.value.filter(id => incidents.value.some(inc => inc.id === id));
                 if (activeIncident.value) {
                     activeIncident.value = incidents.value.find(i => i.id === activeIncident.value.id) || null;
                 }
@@ -181,6 +198,8 @@ createApp({
                 incidents.value = incidents.value.filter(i => i.id !== id);
                 selectedIds.value = selectedIds.value.filter(selectedId => selectedId !== id);
                 if (activeIncident.value?.id === id) closeDetail();
+                if (incidents.value.length === 1 && pagination.page > 1) pagination.page--;
+                await fetchIncidents();
                 showToast("Record Deleted", "cyber");
             } catch (e) {
                 showToast("Delete failed", "alert");
@@ -203,23 +222,25 @@ createApp({
             }
         }
 
-        async function bulkResolve() {
-            if (!confirm(`Mark ${selectedIds.value.length} incidents as RESOLVED?`)) return;
+        async function bulkTriaged() {
+            if (!confirm(`Mark ${selectedIds.value.length} incidents as TRIAGED?`)) return;
             try {
                 const res = await fetch("/api/incidents/bulk-status", {
                     method: "PUT",
                     headers: { "Content-Type": "application/json", "X-API-KEY": API_KEY },
-                    body: JSON.stringify({ ids: selectedIds.value, status: "RESOLVED" })
+                    body: JSON.stringify({ ids: selectedIds.value, status: "TRIAGED" })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || "Batch update failed");
                 selectedIds.value = [];
                 await fetchIncidents();
-                showToast(data.message || "Batch update successful", "cyber");
+                showToast(data.message || "Selected incidents moved to TRIAGED", "cyber");
             } catch (e) {
                 showToast(e.message || "Batch update failed", "alert");
             }
         }
+
+        const bulkResolve = bulkTriaged;
 
         async function analyzeIncident() {
             if (!activeIncident.value) return;
@@ -331,6 +352,7 @@ createApp({
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || "Save failed");
 
+                pagination.page = 1;
                 await fetchIncidents();
                 closeForm();
                 if (isEdit && activeIncident.value?.id === form.id) {
@@ -369,6 +391,19 @@ createApp({
             if (!activeIncident.value) return;
             await updateStatus(activeIncident.value.id, status);
             openDetail(incidents.value.find(i => i.id === activeIncident.value.id));
+        }
+
+        function goToPage(page) {
+            if (page < 1 || page > pagination.totalPages || page === pagination.page) return;
+            pagination.page = page;
+            fetchIncidents();
+        }
+
+        function updatePageSize(size) {
+            if (size === pagination.pageSize) return;
+            pagination.pageSize = size;
+            pagination.page = 1;
+            fetchIncidents();
         }
 
         function formatDate(value) {
@@ -426,6 +461,8 @@ createApp({
         return {
             severities,
             incidents,
+            archiveSummary,
+            pagination,
             workflowStatuses,
             isLoading,
             isAnalyzing,
@@ -443,13 +480,13 @@ createApp({
             form,
             tagDraft,
             workflowDraft,
-            filteredIncidents,
             isAllSelected,
             knownOwners,
             openIncidentCount,
             criticalIncidentCount,
             assignedIncidentCount,
             resolvedIncidentCount,
+            showingCount,
             allowedTransitions,
             formStatusOptions,
             loginSession,
@@ -458,6 +495,7 @@ createApp({
             fetchIncidents,
             deleteIncident,
             bulkResolve,
+            bulkTriaged,
             analyzeIncident,
             openDetail,
             closeDetail,
@@ -469,6 +507,8 @@ createApp({
             submitForm,
             saveAssignment,
             transitionIncident,
+            goToPage,
+            updatePageSize,
             formatDate,
             formatAuditDate,
             getSevClass,

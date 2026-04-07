@@ -90,11 +90,15 @@
                         <span class='sidebar-link-meta'>Telemetry</span>
                         <span class='sidebar-link-label'>Service Monitor</span>
                     </a>
-                    <a href='/archive' class='sidebar-link {(active == "archive" ? "active" : "")}' data-short='05'>
+                    <a href='/nms' class='sidebar-link {(active == "nms" ? "active" : "")}' data-short='05'>
+                        <span class='sidebar-link-meta'>Network ops</span>
+                        <span class='sidebar-link-label'>NMS Live</span>
+                    </a>
+                    <a href='/archive' class='sidebar-link {(active == "archive" ? "active" : "")}' data-short='06'>
                         <span class='sidebar-link-meta'>Actionable</span>
                         <span class='sidebar-link-label'>Incident Archive</span>
                     </a>
-                    <a href='/reports' class='sidebar-link {(active == "reports" ? "active" : "")}' data-short='06'>
+                    <a href='/reports' class='sidebar-link {(active == "reports" ? "active" : "")}' data-short='07'>
                         <span class='sidebar-link-meta'>Output</span>
                         <span class='sidebar-link-label'>Generate Reports</span>
                     </a>

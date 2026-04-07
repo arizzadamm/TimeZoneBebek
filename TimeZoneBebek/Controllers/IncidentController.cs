@@ -22,6 +22,13 @@ namespace TimeZoneBebek.Controllers
             return Ok(data);
         }
 
+        [HttpGet("archive")]
+        public async Task<IActionResult> GetArchive([FromQuery] IncidentArchiveQuery query)
+        {
+            var data = await _service.SearchArchiveAsync(query);
+            return Ok(data);
+        }
+
         [HttpGet("summary")]
         public async Task<IActionResult> GetSummary()
         {
