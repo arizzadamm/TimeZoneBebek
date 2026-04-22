@@ -285,6 +285,8 @@ namespace TimeZoneBebek.Services
             incident.Source = NormalizeOptional(incident.Source);
             incident.AffectedAsset = NormalizeOptional(incident.AffectedAsset);
             incident.ResolutionNote = NormalizeOptional(incident.ResolutionNote);
+            if (IsWafBlockedStatusCode(incident.HttpStatusCode))
+                incident.Status = IncidentStatuses.FalsePositive;
             incident.FirstSeen ??= incident.Date;
             incident.LastSeen ??= incident.Date;
             incident.AuditTrail ??= [];
@@ -359,6 +361,9 @@ namespace TimeZoneBebek.Services
 
             return severityScore + statusScore;
         }
+
+        private static bool IsWafBlockedStatusCode(int? statusCode) =>
+            statusCode.HasValue && statusCode.Value > 0 && statusCode.Value != 200;
 
         private static List<int> BuildTrendSeries(List<Incident> incidents)
         {

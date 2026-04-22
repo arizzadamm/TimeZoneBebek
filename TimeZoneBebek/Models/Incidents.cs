@@ -77,6 +77,8 @@ namespace TimeZoneBebek.Models
         public string? Owner { get; set; }
         public string? Source { get; set; }
         public string? AffectedAsset { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName("status_code")]
+        public int? HttpStatusCode { get; set; }
         public DateTime? FirstSeen { get; set; }
         public DateTime? LastSeen { get; set; }
         public string? ResolutionNote { get; set; }

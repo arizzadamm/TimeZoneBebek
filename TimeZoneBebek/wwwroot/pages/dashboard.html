@@ -5,10 +5,15 @@
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <title>Command Center</title>
 
-    <script src="js/auth-guard.js"></script>
+    <script src="/js/auth-guard.js?v=20260420a"></script>
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 
+    <script src="/js/dashboard-modules/attendance-module.js?v=20260420a"></script>
+    <script src="/js/dashboard-modules/clock-module.js?v=20260420a"></script>
+    <script src="/js/dashboard-modules/polling-module.js?v=20260420a"></script>
+    <script src="/js/dashboard-modules/charts-module.js?v=20260420a"></script>
+    <script src="/js/dashboard-modules/incidents-module.js?v=20260420a"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="https://unpkg.com/typed.js@2.0.16/dist/typed.umd.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
@@ -129,6 +134,150 @@
 
             100% {
                 background-position: -200% 0;
+            }
+        }
+
+        .attendance-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+            max-height: 38vh;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .attendance-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .attendance-row.is-opened {
+            animation: attendanceSlowDim 4.8s ease-in-out infinite;
+        }
+
+        .attendance-meta {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .attendance-name {
+            font-size: 0.95rem;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .attendance-status {
+            font-size: 0.62rem;
+            letter-spacing: 1.2px;
+            color: #768783;
+            margin-top: 3px;
+        }
+
+        .attendance-duration {
+            font-size: 0.78rem;
+            color: #9ec7bf;
+            font-family: 'JetBrains Mono';
+            white-space: nowrap;
+        }
+
+        .attendance-empty {
+            font-size: 0.78rem;
+            color: #768783;
+            padding-top: 8px;
+        }
+
+        .attendance-toast-layer {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10020;
+            pointer-events: none;
+        }
+
+        .attendance-toast-card {
+            min-width: 320px;
+            max-width: min(560px, calc(100vw - 24px));
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border: 1px solid var(--dash-border-strong);
+            background: linear-gradient(135deg, rgba(7, 18, 24, 0.96), rgba(1, 8, 10, 0.92));
+            box-shadow: var(--dash-shadow), 0 0 28px rgba(0, 255, 204, 0.12);
+            transform: translateX(-120vw);
+            opacity: 0;
+            transition: transform 0.55s ease, opacity 0.55s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .attendance-toast-card.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .attendance-toast-card.hide {
+            transform: translateX(120vw);
+            opacity: 0;
+        }
+
+        .attendance-toast-marker {
+            width: 6px;
+            align-self: stretch;
+            border-radius: 999px;
+            box-shadow: 0 0 16px currentColor;
+            flex: 0 0 6px;
+        }
+
+        .attendance-toast-content {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .attendance-toast-title {
+            color: #fff;
+            font-family: 'Orbitron';
+            font-size: 0.9rem;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+
+        .attendance-toast-meta {
+            color: #98aaa5;
+            font-family: 'JetBrains Mono';
+            font-size: 0.72rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        @media (max-width: 900px) {
+            .attendance-list {
+                grid-template-columns: 1fr;
+                max-height: 32vh;
+            }
+        }
+
+        @keyframes attendanceSlowDim {
+            0%, 100% {
+                opacity: 1;
+                box-shadow: inset 0 0 0 rgba(0, 255, 204, 0);
+            }
+
+            50% {
+                opacity: 0.42;
+                box-shadow: inset 0 0 18px rgba(0, 255, 204, 0.05);
             }
         }
 
@@ -973,7 +1122,7 @@
     </div>
 
     <div v-if="viewMode === 'dashboard'" class="dash-wallboard">
-        <div class="dash-kpi-grid">
+        <div class="dash-kpi-grid" v-memo="[soc.defconLevel, soc.topAttacker, soc.topAttackerPct, odometerTickets, currentEps, nextPrayer.name, nextPrayer.time, nextPrayer.countdown]">
             <div class="dash-kpi-card">
                 <div class="dash-kpi-label">Threat Level</div>
                 <div class="dash-kpi-value" :style="{ color: soc.defconColor }">{{ soc.defconLevel }}</div>
@@ -1001,7 +1150,7 @@
             </div>
         </div>
 
-        <div class="source-health-strip token-section">
+        <div class="source-health-strip token-section" v-memo="[socHealth.feedHealthy, socHealth.elasticHealthy, socHealth.epsHealthy, socHealth.threatWebhookHealthy, socHealth.lastBroadcastUtc, socHealth.lastElasticSuccessUtc, socHealth.lastWebhookSuccessUtc, socHealth.lastEpsSuccessUtc]">
             <div v-for="source in sortedHealthSources" :key="source.key" class="source-chip" :class="source.cssClass">
                 <div class="source-chip-main">
                     <div class="source-chip-label">{{ source.label }}</div>
@@ -1054,14 +1203,14 @@
                 </div>
                 <div class="dash-ops-inline">
                     <div class="dash-ops-pill">
-                        <div class="pill-label">Shift Timer</div>
-                        <div class="pill-value" :style="{ color: shift.isOffDuty ? '#778280' : 'var(--cyan)' }">{{ shift.timerText }}</div>
-                        <div class="pill-meta">Since 08:00 WIB</div>
+                        <div class="pill-label">Clock In</div>
+                        <div class="pill-value" :style="{ color: attendanceIsOffline ? '#778280' : 'var(--cyan)' }">{{ attendanceActiveCount }}</div>
+                        <div class="pill-meta">Masih opened</div>
                     </div>
                     <div class="dash-ops-pill">
-                        <div class="pill-label">Terminal</div>
-                        <div class="pill-value" :style="{ color: isTerminalLive ? 'var(--green)' : 'var(--yellow)' }">{{ isTerminalLive ? 'LIVE' : 'SYNC' }}</div>
-                        <div class="pill-meta">Elastic stream monitor</div>
+                        <div class="pill-label">Clock Out</div>
+                        <div class="pill-value" :style="{ color: attendanceIsOffline ? '#778280' : 'var(--red)' }">{{ attendanceClockOutCount }}</div>
+                        <div class="pill-meta">Sudah close</div>
                     </div>
                     <div class="dash-ops-pill">
                         <div class="pill-label">Incident Ingest</div>
@@ -1112,7 +1261,22 @@
             <div style="font-size:0.7rem; color:#666; margin-top:5px; text-align:right;">TODAY'S MOST ACTIVE</div>
         </div>
 
-        <div class='card'><span class='label'>SHIFT DURATION</span><div class='value' :style="{ color: shift.isOffDuty ? '#666' : 'var(--cyan)' }">{{ shift.timerText }}</div><div style="font-size:0.7rem; color:#666;">SINCE 08:00 WIB</div></div>
+        <div class='card'>
+            <span class='label'>ATTENDANCE STATUS</span>
+            <div v-if="(attendanceEntries || []).length === 0" class="attendance-empty">
+                {{ attendanceIsOffline ? 'Attendance sync failed' : 'Belum ada data attendance' }}
+            </div>
+            <div v-else class="attendance-list">
+                <div v-for="entry in attendanceDisplayEntries" :key="entry.key" class="attendance-row" :class="{ 'is-opened': !entry.isClockOut, 'is-closed': entry.isClockOut }">
+                    <div class="attendance-meta">
+                        <div class="attendance-name">{{ entry.name }}</div>
+                        <div class="attendance-status" :style="{ color: entry.isClockOut ? 'var(--red)' : 'var(--cyan)' }">{{ entry.statusLabel }}</div>
+                    </div>
+                    <div class="attendance-duration">{{ entry.durationText }}</div>
+                </div>
+            </div>
+            <div style="font-size:0.7rem; color:#666; margin-top:10px;">{{ attendanceLastSyncText }}</div>
+        </div>
 
         <div class='card hud-card' style="border-color:var(--green);">
             <span class='label' style="color:var(--green);">NEXT PRAYER</span>
@@ -1150,7 +1314,7 @@
             </span>
 
             <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #00ff33; height: 120px; overflow: hidden; display: flex; flex-direction: column-reverse; margin-top: 10px;">
-                <div v-for="(log, index) in sysLogs" :key="index" style="margin-bottom: 4px; border-bottom: 1px dashed rgba(0,255,51,0.2); padding-bottom: 2px;">
+                <div v-for="(log, index) in sysLogDisplay" :key="index" style="margin-bottom: 4px; border-bottom: 1px dashed rgba(0,255,51,0.2); padding-bottom: 2px;">
                     <span style="opacity:0.7">root@csirt:~#</span> <span v-html="log"></span>
                 </div>
             </div>
@@ -1366,6 +1530,6 @@
     </div>
 
 </div>
-    <script src="/js/dashboard-app.js?v=20260406a"></script>
+    <script src="/js/dashboard-app.js?v=20260420a"></script>
 </body>
 </html>

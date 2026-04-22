@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Text.Json;
 using System.Xml.Linq;
@@ -19,6 +20,8 @@ namespace TimeZoneBebek.Controllers
         private readonly MonitoringState _monitoringState;
         private static List<NewsItem> _cachedNews = new();
         private static DateTime _lastNewsFetch = DateTime.MinValue;
+        private static string? _cachedAttendanceSummary;
+        private static DateTime _lastAttendanceFetch = DateTime.MinValue;
 
         public SystemApiController(IConfiguration config, IHttpClientFactory clientFactory, MonitoringState monitoringState)
         {
@@ -99,6 +102,48 @@ namespace TimeZoneBebek.Controllers
                 return Ok(_cachedNews);
             }
             catch { return Ok(new List<NewsItem>()); }
+        }
+
+        [HttpGet("attendance/summary")]
+        public async Task<IActionResult> GetAttendanceSummary()
+        {
+            var url = _config["ExternalAttendance:Url"];
+            var secret = _config["ExternalAttendance:ExternalAppSecret"];
+            var refreshSeconds = Math.Max(_config.GetValue<int?>("ExternalAttendance:RefreshSeconds") ?? 60, 15);
+
+            if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(secret))
+                return Problem("ExternalAttendance configuration is missing.");
+
+            if (!string.IsNullOrWhiteSpace(_cachedAttendanceSummary) && DateTime.UtcNow < _lastAttendanceFetch.AddSeconds(refreshSeconds))
+                return Content(_cachedAttendanceSummary, "application/json");
+
+            try
+            {
+                var client = _clientFactory.CreateClient();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                client.DefaultRequestHeaders.TryAddWithoutValidation("x-external-app-secret", secret);
+
+                using var response = await client.GetAsync(url);
+                var body = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return StatusCode((int)response.StatusCode, new
+                    {
+                        message = "Failed to fetch attendance summary",
+                        upstreamStatus = (int)response.StatusCode,
+                        upstreamBody = body
+                    });
+                }
+
+                _cachedAttendanceSummary = body;
+                _lastAttendanceFetch = DateTime.UtcNow;
+                return Content(body, "application/json");
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
         }
 
         // --- ACUNETIX LOGIC ---

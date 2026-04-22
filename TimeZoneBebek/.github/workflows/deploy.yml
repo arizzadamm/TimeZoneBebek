@@ -1,0 +1,57 @@
+name: Deploy TimeZoneBebek
+
+on:
+  push:
+    branches:
+      - deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Publish application
+        run: dotnet publish TimeZoneBebek.csproj -c Release -o ./publish
+
+      - name: Prepare remote release directory
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            mkdir -p "${{ secrets.APP_PATH }}/releases/${{ github.sha }}"
+            mkdir -p "${{ secrets.APP_PATH }}/shared"
+
+      - name: Upload published files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "publish/*"
+          target: "${{ secrets.APP_PATH }}/releases/${{ github.sha }}"
+          strip_components: 1
+
+      - name: Activate release and restart service
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            set -e
+            ln -sfn "${{ secrets.APP_PATH }}/releases/${{ github.sha }}" "${{ secrets.APP_PATH }}/current"
+            sudo systemctl restart "${{ secrets.SYSTEMD_SERVICE }}"
+            sudo systemctl status "${{ secrets.SYSTEMD_SERVICE }}" --no-pager
