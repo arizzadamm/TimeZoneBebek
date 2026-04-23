@@ -991,7 +991,7 @@ createApp({
             const sessionValid = await validateSession();
             if (!sessionValid) return;
 
-            new Typed("#typed-output", { strings: ["BY ^200 <span style='color:var(--cyan)'>CYBERTEAM BAPPENAS</span>", "SYSTEM STATUS: ^500 <span style='color:var(--green)'>SECURE</span>", "MONITORING ACTIVE..."], typeSpeed: 30, backSpeed: 20, backDelay: 2000, loop: true, contentType: "html" });
+            new Typed("#typed-output", { strings: ["BAPPENAS CSIRT // <span style='color:var(--cyan)'>SECURE OPERATIONS</span>", "REAL-TIME DEFENSE // <span style='color:var(--green)'>MONITORING ACTIVE</span>", "CYBER COMMAND // <span style='color:var(--cyan)'>CONTROLLED RESPONSE</span>"], typeSpeed: 28, backSpeed: 18, backDelay: 2200, loop: true, contentType: "html" });
             if (window.DashboardAttendanceModule) {
                 attendanceRuntime = window.DashboardAttendanceModule.createAttendanceRuntime({
                     config: CONFIG,
